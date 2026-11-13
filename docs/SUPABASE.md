@@ -54,7 +54,8 @@ npm run dev
 Abra `http://localhost:5173/connected.html`. O comando gera `supabase-config.json`, ignorado pelo Git. `npm run build` gera `dist/` e sua configuração pública a partir de `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY` do ambiente. Para usar o `.env` no build:
 
 ```sh
-node --env-file=.env --run build
+npm run build
+node --env-file=.env scripts/config.mjs dist
 npm run preview
 ```
 
