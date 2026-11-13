@@ -25,7 +25,7 @@ async function runSignedInReview(page) {
     await form.getByLabel('Local', { exact: true }).fill('Teste técnico — não comparecer');
     await form.getByLabel('Início', { exact: true }).fill(localDate(start));
     await form.getByLabel('Fim', { exact: true }).fill(localDate(end));
-    await form.getByLabel('Capacidade de vagas', { exact: true }).fill('1');
+    await form.getByLabel('Capacidade de vagas', { exact: true }).fill('2');
     const saved = page.waitForResponse(response => {
       const request = response.request();
       return new URL(response.url()).pathname === '/rest/v1/events' && request.method() === 'POST';
@@ -45,6 +45,8 @@ async function runSignedInReview(page) {
     await expect(publicCard).toBeVisible();
     console.log('PASS criação e publicação do evento exclusivo de teste');
     await publicCard.locator('.poster-link').click();
+    const pmc=page.getByRole('radio',{name:/PMC/});
+    if(await pmc.count())await pmc.check();
     await page.locator('#game-tickets').getByRole('button', { name: 'Inscrever-me', exact: true }).click();
     await expect(page.locator('#game-tickets')).toContainText('Inscrição confirmada.');
     await page.goto(new URL('connected.html', page.url()).href);
@@ -52,7 +54,7 @@ async function runSignedInReview(page) {
     console.log('PASS inscrição no evento de teste');
     await registered.getByRole('button', { name: 'Cancelar minha inscrição', exact: true }).click();
     await expect(registered).toContainText('Inscrição cancelada.');
-    await expect(ownCard).toContainText('1 vaga(s) disponível(is) de 1');
+    await expect(ownCard).toContainText('2 vaga(s) disponível(is) de 2');
     console.log('PASS cancelamento e liberação da vaga');
   } finally {
     if (created) {
