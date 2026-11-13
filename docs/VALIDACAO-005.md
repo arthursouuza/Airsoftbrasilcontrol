@@ -1,31 +1,45 @@
 # Validação da administração — 13/11/2026
 
-Branch de trabalho: feature/catalogo-visual.
+O commit ff64e28 está preservado no histórico. O remoto feature/catalogo-visual
+permanecia em 436b747 na leitura anterior à preparação desta revisão.
 
-- Build com esbuild passou.
-- Os 47 testes de navegador anteriores passaram.
-- Três testes administrativos novos passaram: arquivar/restaurar, aprovação de
-  exclusão por título (cancelamento e erro não chamam RPC), Carandiru sem botão
-  de exclusão, logout, conta comum e erro do servidor sem falso sucesso.
-- PostgreSQL 17 isolado em Docker: migrações 001–005 aplicadas; RLS e negação
-  administrativa para conta comum; INSERT arquivado e memória NULL rejeitados;
-  arquivar/restaurar; evento passado retorna a rascunho; Carandiru protegida após
-  renomeação; pagamento pendente preservado; exclusão bloqueada por inscrição
-  ativa ou cancelada; exclusão local de evento vazio com auditoria atômica.
-- Nenhuma exclusão definitiva foi executada em produção. As exclusões dos testes
-  ocorreram somente no banco temporário criado no container abc-admin-db.
+## Evidência local
 
-Leitura pública real confirmou Operação Carandiru publicada, ID
-b581d679-53ba-4479-8e92-9b44b7ab49b6. Consulta de archived_from_status retornou
-42703 (coluna ausente), compatível com 005 ainda não instalada. Isso não confirma
-por si só todo o schema remoto nem permite conferir pagamentos privados.
+- Build passou. Os 53 testes completos de navegador passaram antes da adição do
+  lote; depois, os sete testes administrativos passaram, incluindo o novo lote.
+- PostgreSQL 17 isolado: 001–005 aplicadas; RLS, negação a conta comum/anônima,
+  INSERT arquivado e memória NULL rejeitados; restauração passada volta a rascunho;
+  Carandiru renomeada continua publicada e não pode ser excluída.
+- RPCs de eventos, jogadores, equipes, membros reversíveis, grupos, inscrições,
+  pagamentos e conteúdo passaram. Campos não permitidos, mudança de vínculo,
+  capacidade inválida e edição com snapshot desatualizado foram rejeitados.
+- Cancelamento libera contadores e preserva pagamentos. Um lote com Carandiru é
+  inteiramente revertido; lote válido arquiva e gera auditoria por evento.
+- Ensaio local de backup: pg_dump com snapshot exportado, hashes de todas as tabelas
+  public/auth/storage do fixture, restauração em outro banco temporário e comparação
+  SHA-256 passaram. Nenhum Supabase remoto foi restaurado.
+- Interface: aprovações recusadas não chamam exclusão/lote; Carandiru sem seleção de
+  lote ou botão de exclusão; edição envia snapshot; pagamentos usam centavos;
+  texto HTML de conteúdo é exibido literalmente; logout limpa o painel.
 
-O ambiente não disponibiliza credencial administrativa Supabase. O script de
-backup parou antes de acessar o banco por ausência de SUPABASE_DB_URL.
-Backup efetivo e restauração NÃO executados; migração NÃO aplicada em produção;
-conta administrativa ainda depende de confirmação do titular. Nenhuma publicação
-Pages realizada. A leitura da configuração Pages via gh foi bloqueada por rede
-(Forbidden em api.github.com). O conector GitHub disponível não expõe essa leitura.
+## Evidência pública real
 
-Concluir backup/restauração, conferência privada de pagamentos e homologação
-remota antes da publicação. Não confundir testes locais com validação em produção.
+scripts/production-smoke.cjs abriu o Pages atual no Chromium: HTTP 200, login
+publicado e sem admin-panel no HTML implantado. Carandiru permanece published,
+ID b581d679-53ba-4479-8e92-9b44b7ab49b6. A navegação HTTP real passou via
+Playwright route.fetch, com a CA do ambiente e verificação TLS ativa, devido à CA
+não instalada no Chromium. Nenhum arquivo local substituiu a hospedagem.
+Consulta anônima só vê Carandiru; não revela os 14 eventos privados de teste.
+
+Após autorização para acesso seguro, a credencial temporária privada antiga foi
+usada uma vez para tentar login real; Supabase retornou HTTP 400. Não houve nova
+tentativa, redefinição de senha ou alterações em tabelas. Não houve login
+administrativo bem-sucedido nesta revisão.
+
+## Pendente em produção
+
+Faltam SUPABASE_DB_URL, conectividade PostgreSQL e credencial/sessão válida da conta
+administrativa. Não há backup real nem restauração desse backup. Não foi aplicada
+migração, não foram arquivados os 14 eventos e não houve exclusão definitiva remota.
+Acesso a segredos foi autorizado; aprovação de migração e confirmação do deploy
+continuam necessárias. Não foi publicado o novo painel nem homologado em produção.

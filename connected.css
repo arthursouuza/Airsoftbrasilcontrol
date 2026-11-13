@@ -354,3 +354,13 @@ body[data-page="game"] .mobile-nav{display:none}
  #events:has(>.poster-card:only-child),.recent-grid:has(>.poster-card:only-child){grid-template-columns:minmax(0,360px);grid-auto-columns:minmax(0,360px)}
  #events>.poster-card:only-child,.recent-grid>.poster-card:only-child{grid-column:auto}
 }
+
+/* Administração: formulários e auditoria acessíveis também no celular. */
+#admin-panel { margin-block: 2rem; scroll-margin-top: 2rem; }
+.admin-tabs { display:flex; flex-wrap:wrap; gap:.5rem; margin-block:1rem; }
+.admin-editor { display:grid; gap:.8rem; margin-block:1rem; }
+.admin-editor label { display:grid; gap:.3rem; min-width:0; }
+.admin-editor input,.admin-editor textarea,.admin-editor select { width:100%; min-width:0; }
+.admin-records { display:grid; gap:1rem; margin-block:1rem; }
+.admin-records pre { white-space:pre-wrap; overflow-wrap:anywhere; font-size:.8rem; }
+#admin-panel .card { min-width:0; overflow-wrap:anywhere; }

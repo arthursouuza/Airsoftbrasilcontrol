@@ -120,3 +120,10 @@ Operação Carandiru protegida por ID e título. Instruções de backup, aplica�
 publicação em [docs/APLICAR-005.md](docs/APLICAR-005.md).
 `npm run test:admin:db` valida 001–005 no container PostgreSQL 17 `abc-admin-db`,
 isolado de produção.
+
+A ampliação do Modo Deus inclui gerenciamento auditado de jogadores, equipes,
+membros, grupos, inscrições, pagamentos manuais e seis blocos de conteúdo, com
+formulários no site. Consulte [docs/ADMINISTRACAO.md](docs/ADMINISTRACAO.md).
+O arquivamento em lote é atômico; Carandiru deve permanecer publicada.
+Os recursos dependem da migração e do deploy aprovados. Não estão homologados em
+produção apenas por passar nos testes locais.

@@ -372,3 +372,14 @@ function applyQuickSearch() {
 }
 $('quick-search-form')?.addEventListener('submit', event => { event.preventDefault(); applyQuickSearch(); });
 $('quick-search')?.addEventListener('input', () => { clearTimeout(quickSearchTimer); quickSearchTimer = setTimeout(applyQuickSearch, 300); });
+
+// Conteúdo público é texto: jamais interpreta HTML vindo do banco.
+(async () => {
+  const result = await db.from('site_content').select('key,value');
+  if (result.error) return; // Mantém os textos padrão até a migração ser aplicada.
+  for (const row of result.data || []) {
+    document.querySelectorAll('[data-site-content]').forEach(node => {
+      if (node.dataset.siteContent === row.key) node.textContent = row.value;
+    });
+  }
+})().catch(() => {});
