@@ -93,4 +93,90 @@ returns void language plpgsql security definer set search_path = '' as $$
 declare v_event public.events%rowtype;
 begin
   if not public.is_site_admin() then
+  raise exception 'Acesso administrativo negado' using errcode = '42501';
+  end if;
+  select * into v_event from public.events where id = p_event_id for update;
+  if not found then raise exception 'Evento nao encontrado'; end if;
+  if v_event.status = 'archived' then return; end if;
+  update public.events
+     set status = 'archived', archived_from_status = v_event.status
+   where id = p_event_id;
+  insert into public.admin_event_audit(actor_id,event_id,event_title,action,details)
+  values (auth.uid(),p_event_id,v_event.title,'archive',
+          jsonb_build_object('previous_status',v_event.status));
+end;
+$$;
+
+create function public.admin_restore_event(p_event_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_event public.events%rowtype; v_target text;
+begin
+  if not public.is_site_admin() then
     raise exception 'Acesso administrativo negado' using errcode = '42501';
+  end if;
+  select * into v_event from public.events where id = p_event_id for update;
+  if not found then raise exception 'Evento nao encontrado'; end if;
+  if v_event.status <> 'archived' then
+    raise exception 'Evento nao esta arquivado';
+  end if;
+  v_target := v_event.archived_from_status;
+  -- Um evento passado nao volta automaticamente ao catalogo publico.
+  if v_target = 'published' and v_event.starts_at <= now() then
+    v_target := 'draft';
+  end if;
+  update public.events
+     set status = v_target, archived_from_status = null
+   where id = p_event_id;
+  insert into public.admin_event_audit(actor_id,event_id,event_title,action,details)
+  values (auth.uid(),p_event_id,v_event.title,'restore',
+          jsonb_build_object('restored_status',v_target));
+end;
+$$;
+
+-- Excluir apenas eventos sem qualquer pagamento, mesmo pendente.
+-- Confirma-se o titulo exato. Inscricoes antes dos grupos, depois evento.
+create function public.admin_delete_event(p_event_id uuid, p_confirm_title text)
+returns void language plpgsql security definer set search_path = '' as $$
+declare
+  v_event public.events%rowtype;
+  v_registrations integer;
+  v_groups integer;
+begin
+  if not public.is_site_admin() then
+    raise exception 'Acesso administrativo negado' using errcode = '42501';
+  end if;
+  select * into v_event from public.events where id = p_event_id for update;
+  if not found then raise exception 'Evento nao encontrado'; end if;
+  if p_confirm_title is distinct from v_event.title then
+    raise exception 'Confirmacao incorreta: informe o titulo exato do evento';
+  end if;
+  -- Bloqueia as inscricoes existentes contra novos pagamentos concorrentes.
+  perform 1 from public.registrations
+    where event_id = p_event_id for update;
+  if exists (
+    select 1 from public.payments p
+    join public.registrations r on r.id = p.registration_id
+    where r.event_id = p_event_id
+  ) then
+    raise exception 'Exclusao bloqueada: existem pagamentos vinculados';
+  end if;
+  select count(*) into v_registrations from public.registrations where event_id = p_event_id;
+  select count(*) into v_groups from public.event_combat_groups where event_id = p_event_id;
+  delete from public.registrations where event_id = p_event_id;
+  delete from public.event_combat_groups where event_id = p_event_id;
+  delete from public.events where id = p_event_id;
+  insert into public.admin_event_audit(actor_id,event_id,event_title,action,details)
+  values (auth.uid(),p_event_id,v_event.title,'delete',
+          jsonb_build_object('registrations_deleted',v_registrations,
+                             'groups_deleted',v_groups));
+end;
+$$;
+
+revoke all on function public.admin_archive_event(uuid) from public, anon, authenticated;
+revoke all on function public.admin_restore_event(uuid) from public, anon, authenticated;
+revoke all on function public.admin_delete_event(uuid,text) from public, anon, authenticated;
+grant execute on function public.admin_archive_event(uuid) to authenticated;
+grant execute on function public.admin_restore_event(uuid) to authenticated;
+grant execute on function public.admin_delete_event(uuid,text) to authenticated;
+notify pgrst, 'reload schema';
+commit;
