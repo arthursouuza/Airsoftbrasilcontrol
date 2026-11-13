@@ -93,7 +93,7 @@ returns void language plpgsql security definer set search_path = '' as $$
 declare v_event public.events%rowtype;
 begin
   if not public.is_site_admin() then
-  raise exception 'Acesso administrativo negado' using errcode = '42501';
+    raise exception 'Acesso administrativo negado' using errcode = '42501';
   end if;
   select * into v_event from public.events where id = p_event_id for update;
   if not found then raise exception 'Evento nao encontrado'; end if;
