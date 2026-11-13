@@ -10,6 +10,7 @@ function notice(message, error = false) {
 }
 function check(result) { if (result.error) throw result.error; return result.data; }
 function errorMessage(error) {
+  if (error.code === 'over_email_send_rate_limit') return 'O limite de envio de e-mails do Supabase foi atingido. Aguarde a liberação do serviço e tente novamente.';
   if (error.code === '23505') return 'Você já está inscrito neste evento.';
   if (error.code === '42501') return 'Sua conta não tem permissão para esta ação. Confira se entrou corretamente.';
   if (/email not confirmed/i.test(error.message)) return 'Confirme seu e-mail antes de entrar.';

@@ -18,6 +18,12 @@ Se o link expirar ou já tiver sido utilizado, use **Solicitar novo link de
 recuperação** na página de retorno. Use o e-mail mais recente. A página sem um
 link válido não permite definir uma senha, mesmo havendo outra sessão no navegador.
 
+Se aparecer **O limite de envio de e-mails do Supabase foi atingido**, o serviço
+recusou o envio (HTTP 429). Aguarde a liberação antes de tentar novamente.
+O administrador pode configurar um provedor SMTP próprio nas configurações de
+e-mail/SMTP da autenticação do Supabase. As credenciais SMTP devem ficar somente
+no painel do Supabase, nunca no chat ou no site.
+
 ## Configuração
 
 A recuperação usa a mesma URL já autorizada de `auth-callback.html`. O SDK

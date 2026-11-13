@@ -101,3 +101,9 @@ com sessão e usuário validados no Supabase. Validação automatizada com API
 simulada inclui envio, atualização, confirmação divergente, senha rejeitada,
 sessão inválida e logout global. Validação real de sessão não altera a senha.
 A definição final real é realizada pelo usuário, nunca pelo agente.
+
+Após a publicação do fluxo, o formulário abriu corretamente com sessão real.
+A solicitação de e-mail real no site publicado foi bloqueada pelo Supabase:
+HTTP 429, `over_email_send_rate_limit`. Não houve alteração de senha. A entrega
+do e-mail e a alteração final real ficam pendentes até liberação do limite ou
+configuração de SMTP próprio, e preenchimento da nova senha pelo usuário.

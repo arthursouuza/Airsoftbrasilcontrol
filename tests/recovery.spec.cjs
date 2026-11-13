@@ -36,6 +36,14 @@ test('recuperação valida sessão, compara campos, atualiza e encerra sessões 
 test('senha rejeitada pelo serviço mantém possibilidade de tentar novamente (API simulada)',async({page})=>{
  await recovery(page,{updateError:'same_password'});await expect(page.locator('#new-password-form')).toBeVisible();await page.getByLabel('Nova senha',{exact:true}).fill('Somente-no-mock-123!');await page.getByLabel('Confirmar nova senha').fill('Somente-no-mock-123!');await page.getByRole('button',{name:'Salvar nova senha'}).click();await expect(page.getByRole('status')).toContainText('diferente da atual');await expect(page.locator('#new-password-form')).toBeVisible();
 });
+test('limite de e-mails informa bloqueio sem afirmar envio (API simulada)',async({page})=>{
+ await page.route(host+'/**',async route=>{
+  const url=new URL(route.request().url());
+  if(url.pathname.endsWith('/recover'))await route.fulfill({status:429,contentType:'application/json',body:JSON.stringify({error_code:'over_email_send_rate_limit',msg:'email rate limit exceeded'})});
+  else await route.fulfill({status:200,contentType:'application/json',body:'[]'});
+ });
+ await page.goto('/connected.html#forgot-password');await page.getByLabel('E-mail para recuperar a senha').fill(user.email);await page.getByRole('button',{name:'Enviar link de recuperação'}).click();await expect(page.locator('#notice')).toContainText('limite de envio de e-mails');await expect(page.locator('#notice')).not.toContainText('você receberá');
+});
 test('sessão inválida e link sem credenciais não oferecem alteração de senha',async({page})=>{
  const calls=await recovery(page,{invalidSession:true});await expect(page.getByRole('status')).toContainText('Este link expirou');await expect(page.locator('#new-password-form')).toBeHidden();expect(calls.filter(c=>c.method==='PUT')).toHaveLength(0);
  await page.goto('/auth-callback.html');await expect(page.locator('#new-password-form')).toBeHidden();
