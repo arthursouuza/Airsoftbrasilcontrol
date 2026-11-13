@@ -86,7 +86,7 @@ for(const width of [390,1440])test('páginas separam catálogo, login, cadastro 
  await page.locator('[data-mobile="account"]').evaluate(el=>el.click());await expect(page).toHaveURL(/login.html$/);
  await expect(page.getByRole('heading',{name:'Entrar',exact:true})).toBeVisible();await expect(page.getByLabel('Nome de jogador')).toHaveCount(0);await expect(page.locator('#catalogue-home,#event-form')).toHaveCount(0);
  await page.getByRole('link',{name:'Criar uma conta',exact:true}).click();await expect(page).toHaveURL(/cadastro.html$/);await expect(page.getByLabel('Nome de jogador')).toBeVisible();await expect(page.locator('input[name=password]')).toHaveAttribute('autocomplete','new-password');await expect(page.getByRole('button',{name:'Entrar',exact:true})).toHaveCount(0);
- await page.goto('/jogos.html');await expect(page.locator('#events h3')).toBeVisible();await expect(page.getByRole('heading',{name:/Todos os jogos/})).toBeVisible();await expect(page.locator('#event-filters')).toBeVisible();await expect(page.locator('#auth-form,#event-form,.hero,#new-arrivals')).toHaveCount(0);
+ await page.goto('/jogos.html');await expect(page.locator('#events h3')).toBeVisible();await expect(page.getByRole('heading',{name:/Todos os jogos/})).toBeVisible();if(width<650){await expect(page.locator('#event-filters')).toBeHidden();await page.locator('#filters-panel summary').click();}await expect(page.locator('#event-filters')).toBeVisible();await expect(page.locator('#auth-form,#event-form,.hero,#new-arrivals')).toHaveCount(0);
  await page.goto('/connected.html');await expect(page.locator('#account-guest')).toBeVisible();await expect(page.locator('#account')).toBeHidden();await expect(page.locator('#catalogue-home,#auth-form')).toHaveCount(0);
  await page.goto('/game.html?id='+id);await expect(page.locator('#game-view h1')).toBeVisible();await expect(page.locator('#catalogue-home,#auth-form,#event-form')).toHaveCount(0);expect(errors).toEqual([]);
 });
@@ -98,4 +98,18 @@ test('login retorna ao jogo sem inscrição automática e rejeita retorno extern
  await expect(page).toHaveURL(new RegExp('game.html\\?id='+id));await expect(page.locator('#game-tickets').getByRole('button',{name:'Inscrever-me',exact:true})).toBeVisible();
  expect(calls.some(c=>c.method==='POST'&&c.url.pathname.endsWith('/registrations'))).toBe(false);
  await page.goto('/login.html?next=https%3A%2F%2Fexample.com%2F');await expect(page).toHaveURL(/connected.html$/);await expect(page.locator('#account')).toBeVisible();
+});
+
+
+test('cartaz sem foto é compacto, com data brasileira e local, e filtros recolhem no celular (API simulada)',async({page})=>{
+ await mock(page);await page.setViewportSize({width:390,height:844});await page.goto('/jogos.html');
+ await expect(page.locator('#events h3')).toBeVisible();await expect(page.locator('#event-filters')).toBeHidden();await expect(page.locator('#filters-panel summary')).toBeVisible();
+ await page.locator('#filters-panel summary').click();await expect(page.locator('#event-filters')).toBeVisible();await page.locator('#filters-panel summary').click();await expect(page.locator('#event-filters')).toBeHidden();
+ const art=page.locator('#events .poster-art');await expect(art).toHaveClass(/is-typographic/);await expect(art).toContainText(event.title);await expect(art).toContainText('01/12/2030');await expect(art.locator('.poster-fallback-location')).toBeVisible();await expect(art).toContainText(event.location);expect((await art.boundingBox()).height).toBeLessThan(260);
+ await page.goto('/game.html?id='+id);await expect(page.locator('.game-date')).toHaveText('01/12/2030');await expect(page.locator('.game-cover')).toHaveClass(/is-typographic/);expect((await page.locator('.game-cover').boundingBox()).height).toBeLessThan(290);
+});
+
+test('imagem indisponível também recebe cartaz tipográfico (API simulada)',async({page})=>{
+ await mock(page,{event:{poster_url:'https://images.example.test/ausente.jpg'}});await page.route('https://images.example.test/**',route=>route.fulfill({status:404,body:''}));await page.goto('/');
+ await expect(page.locator('#events .poster-art')).toHaveClass(/is-typographic/);await expect(page.locator('#events .poster-fallback-location')).toBeVisible();
 });

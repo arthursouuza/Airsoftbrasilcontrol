@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_KEY, emailRedirectUrl } from './config.js';
-import { posterCard, renderRecents, renderTeams, renderGame, metadataEditor } from './catalogue.js';
+import { dateTime, posterCard, renderRecents, renderTeams, renderGame, metadataEditor } from './catalogue.js';
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 let session = null;
@@ -28,7 +28,7 @@ if (gamePage) {
   $('game-view').textContent = 'Carregando jogo…';
 }
 let filters = { title: '', location: '', date: '' };
-if ($('filters-panel')) $('filters-panel').open = page === 'catalogue' || !window.matchMedia('(max-width:650px)').matches;
+if ($('filters-panel')) $('filters-panel').open = !window.matchMedia('(max-width:650px)').matches;
 const literalPattern = text => '%' + text.replace(/[\\%_]/g, '\\$&') + '%';
 function publicEventsQuery() {
   let query = db.from('events').select('*').eq('status', 'published').gt('starts_at', new Date().toISOString()).order('starts_at');
@@ -72,7 +72,7 @@ function card(event) {
   const article = document.createElement('article'); article.className = 'card';
   const title = document.createElement('h3'); title.textContent = event.title; article.append(title);
   article.append(paragraph(event.description), paragraph(event.location),
-    paragraph(new Date(event.starts_at).toLocaleString('pt-BR')),
+    paragraph(dateTime(event.starts_at)),
     paragraph(new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.price_cents / 100)));
   article.append(paragraph(event.capacity == null ? 'Capacidade ainda não definida.'
     : `${Math.max(0, event.capacity - event.active_registration_count)} vaga(s) disponível(is) de ${event.capacity}.`));
@@ -169,7 +169,7 @@ async function load() {
       participants.replaceChildren();
       for (const r of rows) {
         const item = document.createElement('div');
-        item.append(paragraph(`Inscrição ${r.id.slice(0, 8)} · ${new Date(r.created_at).toLocaleString('pt-BR')}`),
+        item.append(paragraph(`Inscrição ${r.id.slice(0, 8)} · ${dateTime(r.created_at)}`),
           button(`Cancelar inscrição ${r.id.slice(0, 8)}`, () => cancelRegistration(r.id)));
         participants.append(item);
       }
@@ -189,7 +189,7 @@ async function load() {
   if (!myEvents.length) $('my-events').append(paragraph('Você ainda não criou eventos.'));
   for (const r of myRegistrations) {
     const element = document.createElement('article'); element.className = 'card';
-    element.append(paragraph(r.events ? `${r.events.title} · ${new Date(r.events.starts_at).toLocaleString('pt-BR')}`
+    element.append(paragraph(r.events ? `${r.events.title} · ${dateTime(r.events.starts_at)}`
       : 'Inscrição registrada. Este evento não está disponível no catálogo.'));
     element.append(paragraph(r.status === 'cancelled' ? 'Inscrição cancelada.' : 'Inscrição ativa.'));
     if (r.status !== 'cancelled') element.append(button('Cancelar minha inscrição', () => cancelRegistration(r.id)));
@@ -278,7 +278,16 @@ $('event-filters')?.addEventListener('submit', event => {
   event.preventDefault();
   const values = new FormData(event.currentTarget);
   action(event.submitter, async () => {
-    filters = { title: values.get('title').trim(), location: values.get('location').trim(), date: values.get('date') };
+    const dateValue = values.get('date').trim();
+    let date = '';
+    if (dateValue) {
+      const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dateValue);
+      if (!match) throw new Error('Informe a data no formato dd/mm/aaaa.');
+      date = `${match[3]}-${match[2]}-${match[1]}`;
+      const parsed = new Date(date + 'T12:00:00');
+      if (parsed.getFullYear() !== Number(match[3]) || parsed.getMonth() + 1 !== Number(match[2]) || parsed.getDate() !== Number(match[1])) throw new Error('Informe uma data válida no formato dd/mm/aaaa.');
+    }
+    filters = { title: values.get('title').trim(), location: values.get('location').trim(), date };
     await load();
   });
 });

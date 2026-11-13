@@ -29,7 +29,7 @@ async function setup(page,events=fixtures){
 test.use({timezoneId:'America/Sao_Paulo'});
 test('combina nome/local/data, preserva consulta pública e limpa filtros (API simulada)',async({page})=>{
  const queries=await setup(page);await page.goto('/index.html');await expect(page.locator('#events h3')).toHaveCount(4);
- await page.getByLabel('Nome do evento',{exact:true}).fill('operação');await page.getByLabel('Local do evento',{exact:true}).fill('NORTE');await page.getByLabel('Data do evento',{exact:true}).fill('2030-12-02');await page.getByRole('button',{name:'Filtrar eventos',exact:true}).click();
+ await page.getByLabel('Nome do evento',{exact:true}).fill('operação');await page.getByLabel('Local do evento',{exact:true}).fill('NORTE');await page.getByLabel('Data do evento',{exact:true}).fill('02/12/2030');await page.getByRole('button',{name:'Filtrar eventos',exact:true}).click();
  await expect(page.locator('#events h3')).toHaveText(['Operação Aurora']);
  const query=queries.at(-1);expect(query.searchParams.get('title')).toBe('ilike.%operação%');expect(query.searchParams.get('location')).toBe('ilike.%NORTE%');expect(query.searchParams.get('status')).toBe('eq.published');
  expect(query.searchParams.getAll('starts_at')).toContain('gte.2030-12-02T03:00:00.000Z');expect(query.searchParams.getAll('starts_at')).toContain('lt.2030-12-03T03:00:00.000Z');expect(query.searchParams.getAll('starts_at').some(v=>v.startsWith('gt.'))).toBe(true);
@@ -37,7 +37,7 @@ test('combina nome/local/data, preserva consulta pública e limpa filtros (API s
  await page.getByRole('button',{name:'Limpar filtros',exact:true}).click();await expect(page.locator('#events h3')).toHaveCount(4);await expect(page.getByLabel('Nome do evento',{exact:true})).toHaveValue('');await expect(page.getByLabel('Local do evento',{exact:true})).toHaveValue('');await expect(page.getByLabel('Data do evento',{exact:true})).toHaveValue('');expect(queries.at(-1).searchParams.has('title')).toBe(false);
 });
 test('data inclui início do dia e exclui início do dia seguinte (API simulada)',async({page})=>{
- await setup(page);await page.goto('/index.html');await page.getByLabel('Data do evento',{exact:true}).fill('2030-12-02');await page.getByRole('button',{name:'Filtrar eventos',exact:true}).click();await expect(page.locator('#events h3')).toHaveText(['Operação Aurora','Treino 100%_tático']);
+ await setup(page);await page.goto('/index.html');await page.getByLabel('Data do evento',{exact:true}).fill('02/12/2030');await page.getByRole('button',{name:'Filtrar eventos',exact:true}).click();await expect(page.locator('#events h3')).toHaveText(['Operação Aurora','Treino 100%_tático']);
 });
 test('busca literal, resultado vazio e limpeza (API simulada)',async({page})=>{
  const queries=await setup(page);await page.goto('/index.html');await page.getByLabel('Nome do evento',{exact:true}).fill('100%_');await page.getByRole('button',{name:'Filtrar eventos',exact:true}).click();await expect(page.locator('#events h3')).toHaveText(['Treino 100%_tático']);expect(queries.at(-1).searchParams.get('title')).toBe('ilike.%100\\%\\_%');
@@ -47,4 +47,12 @@ test('busca literal, resultado vazio e limpeza (API simulada)',async({page})=>{
 test('celular permite preencher e limpar sem rolagem horizontal (API simulada)',async({page})=>{
  await setup(page);await page.setViewportSize({width:320,height:740});await page.goto('/index.html');await page.getByRole('navigation',{name:'Navegação no celular'}).getByRole('link',{name:'Buscar',exact:true}).click();await page.getByLabel('Local do evento',{exact:true}).fill('Curitiba');await page.getByRole('button',{name:'Filtrar eventos',exact:true}).click();await expect(page.locator('#events h3')).toHaveCount(3);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.getByRole('button',{name:'Limpar filtros',exact:true}).click();await expect(page.locator('#events h3')).toHaveCount(4);
+});
+
+
+test('data brasileira inválida não altera a consulta (API simulada)',async({page})=>{
+ const queries=await setup(page);await page.goto('/jogos.html');await expect(page.locator('#events h3')).toHaveCount(4);const before=queries.length;
+ await page.getByLabel('Data do evento',{exact:true}).fill('31/02/2030');await page.getByRole('button',{name:'Filtrar eventos',exact:true}).click();
+ await expect(page.locator('#notice')).toContainText('data válida');expect(queries.length).toBe(before);
+ await page.getByLabel('Data do evento',{exact:true}).fill('2030-12-02');await page.getByRole('button',{name:'Filtrar eventos',exact:true}).click();await expect(page.locator('#notice')).toContainText('dd/mm/aaaa');expect(queries.length).toBe(before);
 });

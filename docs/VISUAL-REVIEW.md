@@ -210,3 +210,13 @@ Verificação desta revisão: build concluído e 30 testes Playwright aprovados 
 O build extrai somente os blocos da página a partir do template compartilhado. Não se trata de esconder todos os formulários com CSS no catálogo. Os links antigos #auth/#account/#forgot-password recebem navegação compatível. Login iniciado num jogo retorna a esse jogo sem inscrever automaticamente; retornos externos são recusados. O callback de e-mail continua no mesmo endereço autorizado, sem nova configuração no Supabase. Nenhuma migração é necessária para separar as páginas.
 
 O roteiro manual foi atualizado para navegar entre catálogo e conta e continua alterando apenas o evento técnico criado pela própria execução. Build e 33 testes automatizados passaram (API simulada); capturas públicas reais foram conferidas em 390 px. As pendências de autenticação real, 003, imagem de Carandiru e SMTP permanecem. Main e Pages continuam sem alteração.
+
+## Ajustes da base aprovada — 13/11/2026
+
+Filtros iniciam recolhidos no celular tanto no início quanto em Jogos, com summary “Filtrar jogos” sempre visível. Buscar e o chip de local também expandem os filtros. No computador, permanecem abertos.
+
+Cartazes sem URL válida ou com falha de carregamento recebem apresentação tipográfica compacta: título, data completa e local, sem a área alta reservada a uma fotografia ausente. A capa individual usa o mesmo tratamento compacto. Imagens válidas mantêm sua apresentação anterior.
+
+Datas de evento, legendas, capas e registros passam a dd/mm/aaaa, com horário separado quando aplicável. O filtro usa entrada explícita dd/mm/aaaa e valida dia/mês/ano antes de converter para os limites de dia no Supabase; datas impossíveis não disparam consulta. Campos nativos de criação com datetime-local continuam usando o seletor do navegador.
+
+Build e 36 testes Playwright aprovados (API simulada), cobrindo também recolher/expandir, dimensões do cartaz, falha de imagem e datas inválidas. Capturas atualizadas com leitura pública real do Supabase. Sem alteração de schema, políticas ou dados de inscrições. Main e Pages não atualizados. A comparação das funcionalidades e lacunas está em FUNCIONALIDADES-REFERENCIA.md.

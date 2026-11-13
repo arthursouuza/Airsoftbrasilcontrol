@@ -222,3 +222,25 @@ body[data-page="account"] #account>h2{margin-top:30px}
  body[data-page="login"] .account-area,body[data-page="signup"] .account-area{margin:28px auto}
  body[data-page="account"] .account-area{margin:22px auto}
 }
+
+/* Sem fotografia: cartaz compacto com informações reais, inclusive após erro da imagem. */
+.poster-fallback-location{display:none}
+.poster-date{font-size:12px;white-space:nowrap}
+.poster-art.is-typographic{aspect-ratio:auto!important;min-height:220px!important;height:auto!important;display:flex;flex-direction:column;justify-content:center;padding:58px 20px 24px;background:linear-gradient(135deg,#163823,#101612)}
+.poster-art.is-typographic .poster-type{position:relative;inset:auto!important;font-size:30px;line-height:1.1;overflow-wrap:anywhere;z-index:2}
+.poster-art.is-typographic .poster-type small{display:block;margin-bottom:16px}
+.poster-art.is-typographic .poster-fallback-location{display:block;font-size:14px;line-height:1.5;letter-spacing:0;text-transform:none;font-weight:450;color:#e2eae4;margin-top:16px}
+.game-cover.is-typographic{min-height:230px;padding-top:80px;background:linear-gradient(135deg,#163823,#101612)}
+.game-cover.is-typographic .game-date{font-size:14px!important;color:#fff!important}
+.game-cover.is-typographic .game-cover-location{font-size:14px!important;color:#d6e2d9!important}
+@media(max-width:650px){
+ .filters-panel:not([open]){display:block}
+ .poster-date{font-size:12px}
+ #events>.poster-card:only-child .poster-art.is-typographic .poster-type,.recent-grid>.poster-card:only-child .poster-art.is-typographic .poster-type{font-size:30px}
+ .poster-art.is-typographic{min-height:205px!important;padding:54px 14px 20px}
+ .poster-art.is-typographic .poster-type{font-size:21px}
+ .poster-art.is-typographic .poster-fallback-location{font-size:12px}
+ .poster-art.is-typographic .poster-date{font-size:11px}
+ .poster-body .poster-date-text,#events>.poster-card:only-child .poster-body .poster-date-text{font-size:12px;white-space:normal;color:#b4bab6}
+ .game-cover.is-typographic{min-height:230px;padding:80px 14px 20px}
+}

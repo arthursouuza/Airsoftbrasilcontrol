@@ -1,6 +1,7 @@
 // Apresentação do catálogo. Os objetos recebidos vêm exclusivamente do Supabase.
 export const money = value => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((value || 0) / 100);
-export const dateTime = value => new Date(value).toLocaleString('pt-BR', { dateStyle: 'medium', timeStyle: 'short' });
+export const dateOnly = value => new Date(value).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+export const dateTime = value => dateOnly(value) + ' às ' + new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const $ = id => document.getElementById(id);
 function arrow() {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -26,13 +27,11 @@ function image(value, title) {
   if (!url) return null;
   const img = document.createElement('img'); img.src = url; img.alt = title;
   img.loading = 'lazy'; img.decoding = 'async'; img.referrerPolicy = 'no-referrer';
-  img.addEventListener('error', () => img.remove());
+  img.addEventListener('error', () => { img.parentElement?.classList.add('is-typographic'); img.remove(); });
   return img;
 }
 function dayBadge(value, className = 'poster-date') {
-  const date = new Date(value);
-  const badge = node('span', String(date.getDate()).padStart(2, '0'), className);
-  badge.append(node('small', date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')));
+  const badge = node('span', dateOnly(value), className);
   return badge;
 }
 export function available(event) {
@@ -44,13 +43,13 @@ export function posterCard(event) {
   const link = node('a', undefined, 'poster-link'); link.href = 'game.html?id=' + encodeURIComponent(event.id);
   link.setAttribute('aria-label', `Ver jogo: ${event.title}`);
   const art = node('div', undefined, 'poster-art'); art.setAttribute('aria-hidden', 'true');
-  const poster = image(event.poster_url || event.cover_url, ''); if (poster) art.append(poster);
+  const poster = image(event.poster_url || event.cover_url, ''); if (poster) art.append(poster); else art.classList.add('is-typographic');
   art.append(node('div', undefined, 'poster-shade'), dayBadge(event.starts_at));
-  const type = node('div', undefined, 'poster-type'); type.append(node('small', 'AIRSOFT BRASIL CONTROL'), document.createTextNode(event.title)); art.append(type);
+  const type = node('div', undefined, 'poster-type'); type.append(node('small', 'AIRSOFT BRASIL CONTROL'), document.createTextNode(event.title)); type.append(node('span', event.location, 'poster-fallback-location')); art.append(type);
   const body = node('div', undefined, 'poster-body');
   body.append(node('h3', event.title));
   const location = node('p', undefined, 'poster-meta'); location.append(node('span', '⌖'), document.createTextNode(event.location));
-  const caption = new Date(event.starts_at).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + event.location;
+  const caption = dateOnly(event.starts_at) + ' · ' + event.location;
   body.append(location, node('p', caption, 'poster-date-text'), node('p', available(event), 'poster-availability'), node('p', money(event.price_cents), 'poster-price'));
   link.append(art, body); card.append(link);
   return card;
@@ -88,9 +87,9 @@ export function renderGame(event, { session, joined, onRegister, onError }) {
   }
   document.title = event.title + ' · Airsoft Brasil Control';
   const cover = node('div', undefined, 'game-cover'); const img = image(event.cover_url || event.poster_url, event.title);
-  if (img) { img.loading = 'eager'; cover.append(img); }
+  if (img) { img.loading = 'eager'; cover.append(img); } else cover.classList.add('is-typographic');
   const heading = node('div');
-  const longDate = new Date(event.starts_at).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const longDate = dateOnly(event.starts_at);
   const place = node('p', undefined, 'game-cover-location'); place.append(document.createTextNode(event.location));
   if (Number.isInteger(event.active_registration_count)) place.append(node('span', ` · ${event.active_registration_count} inscrito(s)`, 'confirmed-count'));
   heading.append(node('p', longDate, 'game-date'), node('h1', event.title), place); cover.append(heading);
