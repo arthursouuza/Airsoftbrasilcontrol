@@ -1,0 +1,16 @@
+{
+  "release": "capas-times-006-007",
+  "baseCommit": "d113cee6cab512c23b4fb076a58bc664cf9f17a9",
+  "files": {
+    "index.html": "d65ec36dc0d200325a8f85b63b9baeb8a0ba7288eace94de572e855fa77a62f3",
+    "connected.html": "286a1834a49a55080c6d84c8256879fc5df6325d44091f068cbae80eb411bfa7",
+    "game.html": "18c5742ed40def07f32174400cfedac238aacb1839c3c5d1ce5c931c6484a01e",
+    "login.html": "8e14db3d42d528493fbdcc3994a5df549b19739c3b9242726f18de56060fe8ff",
+    "cadastro.html": "ced0b418dfdaa6bddf41cda087110c7b017460b2b809a68c217c09505dec53c3",
+    "jogos.html": "c6674721bc06e7d240f224f5da32d779cf5c3a1e3665f63ca9513ec9293d18ac",
+    "connected.js": "02057f35ee9601ee7a020fb42c22a8b3e8681788704f9b3a5e7f149946bfd830",
+    "package.json": "a7ff5dc2aec526f980561da805b1716d7a9b6e967e48ec8c5810ccc8067df769",
+    "package-lock.json": "246bdbab034f4c5a3d5ff4ed7f119eb40eff90a0029a764c01d6bf63f6affc6e",
+    "playwright.config.cjs": "3b2e6c84e78711b7333d6db7b45edb4a84401509afe4d864d5b66ea871a7db0e"
+  }
+}

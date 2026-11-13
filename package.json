@@ -12,7 +12,8 @@
     "test:capacity:remote": "python3 scripts/check-capacity-remote.py",
     "test:manual": "node scripts/manual-review.cjs",
     "test:groups:db": "python3 tests/db/combat_groups.py",
-    "test:admin:db": "python3 tests/db/admin.py"
+    "test:admin:db": "python3 tests/db/admin.py",
+    "test:teams-covers:db": "node tests/db/teams-covers.cjs"
   },
   "repository": {
     "type": "git",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "@electric-sql/pglite": "0.5.16"
   }
 }
