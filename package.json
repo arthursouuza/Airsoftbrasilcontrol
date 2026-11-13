@@ -1,0 +1,31 @@
+{
+  "name": "airsoftbrasilcontrol",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild src/app.js --bundle --minify --outfile=connected.js && esbuild src/auth-callback.js --bundle --minify --outfile=auth-callback.js",
+    "test": "playwright test",
+    "start": "python3 -m http.server 8000 --bind 0.0.0.0",
+    "test:isolation": "python3 scripts/check-isolation.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arthursouuza/Airsoftbrasilcontrol.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/arthursouuza/Airsoftbrasilcontrol/issues"
+  },
+  "homepage": "https://github.com/arthursouuza/Airsoftbrasilcontrol#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "esbuild": "^0.28.2"
+  }
+}
