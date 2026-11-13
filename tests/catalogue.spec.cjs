@@ -8,7 +8,7 @@ async function mock(page,options={}){
   const r=route.request(),url=new URL(r.url());requests.push({url,method:r.method()});let data=[];
   if(url.pathname.endsWith('/events')) {
    if(r.method()==='PATCH'){Object.assign(options.event,r.postDataJSON());data=[];}
-   else data=options.missing?[]:[{...event,...options.event}];
+   else data=options.missing?[]:(options.events||[{...event,...options.event}]);
   } else if(url.pathname.endsWith('/token')) data={access_token:'test-token',refresh_token:'test-refresh',token_type:'bearer',expires_in:3600,user:{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',email:'test@example.test',user_metadata:{}}};
   else if(url.pathname.endsWith('/profiles')) data=[{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'}];
   else if(url.pathname.endsWith('/teams')) data=options.teams||[];
@@ -47,4 +47,19 @@ test('conta conectada preserva navegação, times e edição da apresentação (
  await page.getByLabel('E-mail',{exact:true}).fill('test@example.test');await page.getByLabel('Senha',{exact:true}).fill('Somente-mock-123!');await page.getByRole('button',{name:'Entrar',exact:true}).click();
  await expect(page.locator('#account')).toBeVisible();await expect(page.locator('.organizer-link')).toHaveAttribute('href','#account');await expect(page.locator('[data-account-label]')).toHaveText('Minha conta');await expect(page.locator('#teams-list')).toContainText('Time cadastrado');
  await page.getByText('Editar apresentação do jogo',{exact:true}).click();await page.getByLabel('Grupos',{exact:true}).fill('Alpha e Bravo');await page.getByRole('button',{name:'Salvar apresentação'}).click();await expect(page.locator('#notice')).toHaveText('Apresentação atualizada.');expect(opts.event.groups).toBe('Alpha e Bravo');
+});
+
+for(const width of [320,390])test('catálogo mobile usa largura total e faixa horizontal em '+width,async({page})=>{
+ await page.setViewportSize({width,height:844});await mock(page);await page.goto('/');await expect(page.locator('#events h3')).toBeVisible();
+ const widths=await page.locator('#events').evaluate(el=>({container:el.clientWidth,card:el.querySelector('article').getBoundingClientRect().width}));
+ expect(widths.card/widths.container).toBeGreaterThan(.98);
+ expect(await page.locator('.header-actions .button').evaluate(el=>getComputedStyle(el).backgroundColor)).toBe('rgb(0, 213, 99)');
+ await page.unroute(host+'/**');
+ await mock(page,{events:[event,{...event,id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',title:'Segundo evento de teste'},{...event,id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',title:'Terceiro evento de teste'}]});
+ await page.reload();await expect(page.locator('#events article')).toHaveCount(3);
+ const dimensions=await page.locator('#events').evaluate(el=>({client:el.clientWidth,scroll:el.scrollWidth,first:el.children[0].getBoundingClientRect().width,secondTop:el.children[1].getBoundingClientRect().top,firstTop:el.children[0].getBoundingClientRect().top}));
+ expect(dimensions.scroll).toBeGreaterThan(dimensions.client);expect(dimensions.first).toBeGreaterThan(dimensions.client*.75);expect(dimensions.secondTop).toBe(dimensions.firstTop);
+ await page.locator('#events').evaluate(el=>{el.scrollLeft=el.clientWidth;});
+ expect(await page.locator('#events').evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

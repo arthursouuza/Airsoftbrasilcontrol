@@ -72,8 +72,8 @@ seu preço/local/vagas reais; não usam os fixtures dos testes.
 ## Testes e limites
 
 - `npm run build`: passou.
-- `npm test`: 27 testes passaram (18 anteriores, 8 de catálogo/detalhe/navegação
-  e 1 do roteiro de revisão manual com API simulada).
+- `npm test`: 29 testes passaram, incluindo o roteiro de revisão manual com API
+  simulada e os cenários de cartão único/faixa horizontal no celular.
   O teste móvel de filtros foi adaptado para abrir o painel recolhível.
 - Telas verificadas em 320 e 390 px (celular) e 1440 px (desktop), sem rolagem
   horizontal, com navegação, detalhe, filtros e estados de ausência.
@@ -152,3 +152,35 @@ tentativas com as credenciais temporárias antigas.
 Arquivos adicionados nesta continuação: `scripts/manual-review.cjs`,
 `supabase/verificar_apresentacao.sql`, `docs/APLICAR-003.md` e
 `docs/VALIDACAO-MANUAL.md`. Atualizados também package.json e os testes locais.
+
+## Ajuste mobile solicitado após a revisão
+
+Botões e acentos usam verde vivo #00d563, sem verde-limão. Margens, hero,
+títulos, filtro e capa foram compactados mantendo alvos de toque de 44 px.
+O evento único ocupa a largura útil do catálogo; múltiplos eventos usam faixa
+horizontal no celular, com rolagem isolada e scroll-snap. Recém-chegados também
+usa faixa horizontal quando há vários registros. Desktop preserva sua grade.
+
+29 testes Playwright passaram, incluindo novas verificações de cor, largura
+do cartão e rolagem horizontal do catálogo em 320 e 390 px, sem overflow da
+página. Os vários registros usados nesse teste são fixtures isolados da API
+simulada, nunca importados no Supabase. As capturas usam apenas a Operação
+Carandiru real; não houve escrita no banco, alteração de autenticação ou RLS.
+
+Novas capturas em `/workspace/scratch/abc-preview/`:
+- `mobile-pagina-inteira-v2.png` — página completa.
+- `mobile-jogo-v2.png` — todos os detalhes do jogo.
+- `mobile-inicio-v2.png`, `mobile-catalogo-v2.png`, `mobile-jogo-tela-v2.png` —
+  recortes no viewport de 390 x 844, com a navegação fixa em sua posição real.
+Nas capturas longas, somente a barra inferior foi colocada no final do documento
+durante a captura para não cobrir uma seção no meio da imagem; o CSS do site
+continua com navegação fixa. Não houve alteração de conteúdo para as capturas.
+
+A main não foi atualizada. Pendências anteriores de gravação acessível, migração
+003 e homologação autenticada real permanecem registradas acima.
+
+A referência adicional compartilhada pela Biblioteca do ChatGPT também retornou
+403 do proxy. Seu conteúdo não foi visto. A comparação exata continua pendente
+de um vídeo/imagem anexado diretamente ao chat ou acesso liberado à referência.
+Os ajustes de cor, largura e espaçamento desta revisão seguem a lista escrita
+pelo usuário, sem afirmar correspondência visual com esse arquivo.
