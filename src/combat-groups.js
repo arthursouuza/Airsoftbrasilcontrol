@@ -2,6 +2,12 @@ import { node } from './catalogue.js';
 export const groupLabel = group => `${group.name} · ${Math.max(0, group.capacity - group.active_registration_count)} de ${group.capacity} vaga(s) disponível(is)`;
 export function groupManager(event, groups, save, onError) {
   const panel = node('details', undefined, 'combat-group-manager');
+  if (event.split_teams) {
+    panel.append(node('summary','Times PMC e CAMUFLADO'));
+    panel.append(node('p','Cada time recebe metade das vagas. Para alterar os limites, edite a capacidade total do evento. O jogador escolhe seu time na inscrição.'));
+    for (const group of groups) panel.append(node('p',groupLabel(group)));
+    return panel;
+  }
   panel.append(node('summary', 'Gerenciar grupos de combate'));
   panel.append(node('p', 'A capacidade total do evento continua valendo. Inscrições antigas sem grupo são preservadas. Para trocar de grupo, o jogador deve cancelar e se inscrever novamente.'));
   function form(group) {

@@ -1,3 +1,4 @@
+import { coverUploader } from './event-media.js';
 const el = (tag, text, className) => {
   const node = document.createElement(tag); if (text !== undefined) node.textContent = text;
   if (className) node.className = className; return node;
@@ -37,7 +38,7 @@ export async function allRows(db, resource, isCurrent) {
     rows.push(...result.data); if(result.data.length<100) return rows;
   }
 }
-export function editor(resource, row, references, save) {
+export function editor(resource, row, references, save, db = null, mediaSaved = null, onError = () => {}) {
   const form=el('form'); form.className='admin-editor';
   const spec=specs[resource];
   for(const f of spec.fields) {
@@ -58,6 +59,11 @@ export function editor(resource, row, references, save) {
     const value=row?.[f.key];
     input.value=f.type==='datetime-local'?localTime(value):f.type==='money'?String((value??0)/100):value??(f.key==='status'?(resource==='payments'?'pending':'draft'):f.type==='select'?f.options[0][0]:'');
     label.append(input);form.append(label);
+  }
+  if (resource === 'events') {
+    if (!row || row.split_teams) { const capacity=form.elements.capacity; capacity.required=true; capacity.min='2'; capacity.step='2'; }
+    const help=el('p','Novos jogos: capacidade par, dividida igualmente entre PMC e CAMUFLADO. Cada jogador escolhe seu time.');form.append(help);
+    if (db && row) form.append(coverUploader(db,row,mediaSaved,onError));
   }
   if(resource==='registrations') {
     const eventInput=form.elements.event_id,groupInput=form.elements.combat_group_id;
@@ -156,6 +162,6 @@ export async function renderConsole(db,container,isCurrent,reload,notice,eventRo
   // Edição de eventos de qualquer organizador, sempre via RPC auditada.
   for(const card of container.querySelectorAll('[data-admin-event]')){
     const row=eventRows.find(e=>e.id===card.dataset.adminEvent);if(!row||row.status==='archived')continue;
-    const edit=el('details');edit.append(el('summary','Editar evento'),editor('events',row,refs,data=>save('events',row,data)));card.append(edit);
+    const edit=el('details');edit.append(el('summary','Editar evento'),editor('events',row,refs,data=>save('events',row,data),db,reload,error=>notice(error.message,true)));card.append(edit);
   }
 }

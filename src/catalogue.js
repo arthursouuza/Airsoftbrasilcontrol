@@ -80,7 +80,7 @@ export function renderTeams(teams, session, failed = false) {
   }
   if (!teams.length) container.append(node('p', 'Ainda não há times cadastrados.', 'empty-panel'));
 }
-export function renderGame(event, { session, joined, onRegister, onError, groups = [], groupsFailure = null, ownGroupId = null }) {
+export function renderGame(event, { session, joined, onRegister, onChooseTeam, onError, groups = [], groupsFailure = null, ownGroupId = null }) {
   const view = $('game-view'); view.replaceChildren(); view.hidden = false;
   const back = node('a', '← Voltar aos jogos', 'game-breadcrumb'); back.href = 'jogos.html'; view.append(back);
   if (!event) {
@@ -114,18 +114,30 @@ export function renderGame(event, { session, joined, onRegister, onError, groups
     element.append(node('h2', title), node('p', text)); copy.append(element); return element;
   }
   section('about', 'Sobre o jogo', event.description || 'Descrição ainda não informada pelo organizador.');
-  const groupSection = section('groups', 'Grupos de combate', groupsFailure ? 'Não foi possível carregar os grupos. Atualize a página.' : groups.length ? 'Escolha seu grupo antes de confirmar a inscrição. O limite total de vagas do evento também se aplica.' : event.groups || 'Grupos ainda não informados pelo organizador.');
+  const groupSection = section('groups', event.split_teams ? 'Escolha seu time' : 'Grupos de combate', groupsFailure ? 'Não foi possível carregar os times. Atualize a página.' : event.split_teams ? `PMC e CAMUFLADO: ${event.capacity/2} vagas para cada time. A escolha é do jogador.` : groups.length ? 'Escolha seu grupo antes de confirmar a inscrição. O limite total de vagas do evento também se aplica.' : event.groups || 'Grupos ainda não informados pelo organizador.');
+  const pendingTeams = (event.active_registration_count || 0) - groups.reduce((sum, group) => sum + group.active_registration_count, 0);
+  if (event.split_teams && pendingTeams > 0) groupSection.append(node('p',`${pendingTeams} inscrição(ões) antiga(s) ainda sem time escolhido. Essas vagas já contam no limite total.`));
   const requestedGroup = new URLSearchParams(window.location.search).get('group');
   let selectedGroup = groups.some(group => group.id === requestedGroup && group.active_registration_count < group.capacity) ? requestedGroup : null;
   if (groups.length) {
     const choices = node('fieldset', undefined, 'combat-group-choices'); choices.append(node('legend', joined ? 'Grupos do evento' : 'Escolha seu grupo'));
     for (const group of groups) {
       const label = node('label', undefined, 'combat-group-choice');
-      const radio = node('input'); radio.type = 'radio'; radio.name = 'combat_group'; radio.value = group.id; radio.disabled = joined || group.active_registration_count >= group.capacity; radio.checked = joined ? ownGroupId === group.id : selectedGroup === group.id;
+      const radio = node('input'); radio.type = 'radio'; radio.name = 'combat_group'; radio.value = group.id; radio.disabled = (joined && (!event.split_teams || !!ownGroupId)) || group.active_registration_count >= group.capacity; radio.checked = joined && ownGroupId ? ownGroupId === group.id : selectedGroup === group.id;
       radio.addEventListener('change', () => { selectedGroup = group.id; });
       label.append(radio, node('span', group.name), node('small', `${Math.max(0, group.capacity - group.active_registration_count)} de ${group.capacity} vaga(s)`)); choices.append(label);
     }
     groupSection.append(choices);
+    if (joined && !ownGroupId && event.split_teams && event.status === 'published' && new Date(event.starts_at) > new Date()) {
+      const choose = node('button','Confirmar meu time'); choose.type = 'button';
+      choose.addEventListener('click', async () => {
+        if (choose.disabled) return;
+        if (!selectedGroup) { onError(new Error('Escolha PMC ou CAMUFLADO.')); return; }
+        choose.disabled = true;
+        try { await onChooseTeam(selectedGroup); } catch (error) { onError(error); } finally { choose.disabled = false; }
+      });
+      groupSection.append(node('p','Sua inscrição já está confirmada. Escolha seu time sem cancelar e sem alterar o pagamento.'), choose);
+    }
   }
   const schedule = section('schedule', 'Horários', event.schedule || 'Horários de início e término informados pelo organizador.');
   const times = node('div', undefined, 'game-time');

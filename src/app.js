@@ -3,6 +3,7 @@ import { SUPABASE_URL, SUPABASE_KEY, emailRedirectUrl } from './config.js';
 import { dateTime, posterCard, renderRecents, renderTeams, renderGame, metadataEditor } from './catalogue.js';
 import { renderAdmin } from './admin.js';
 import { groupManager } from './combat-groups.js';
+import { coverUploader } from './event-media.js';
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 let session = null;
@@ -137,7 +138,13 @@ async function load() {
     renderTeams(teams.data || [], session, !!teams.error);
   }
   if (gamePage) renderGame(detail.data?.[0], {
-    session, joined: joined.has(gameId), ownGroupId: myRegistrations.find(row => row.event_id === gameId && row.status !== 'cancelled')?.combat_group_id, groups: combatGroups.filter(group => group.event_id === gameId), groupsFailure, onRegister: registerForEvent,
+    session, joined: joined.has(gameId), ownGroupId: myRegistrations.find(row => row.event_id === gameId && row.status !== 'cancelled')?.combat_group_id,
+    onChooseTeam: async groupId => {
+      const registration = myRegistrations.find(row => row.event_id === gameId && row.status === 'active');
+      if (!registration) throw new Error('Inscrição ativa não encontrada.');
+      check(await db.rpc('choose_registration_team', { p_registration_id:registration.id,p_group_id:groupId }));
+      notice('Time escolhido. Sua inscrição e pagamento foram preservados.'); await load();
+    }, groups: combatGroups.filter(group => group.event_id === gameId), groupsFailure, onRegister: registerForEvent,
     onError: error => notice(errorMessage(error), true)
   });
   if (gamePage && detail.error) notice('Não foi possível carregar o jogo. Confira sua conexão e atualize a página.', true);
@@ -168,6 +175,7 @@ async function load() {
       notice('Apresentação atualizada.'); await load();
     }, error => notice(errorMessage(error), true));
     if (presentation) element.append(presentation);
+    element.append(coverUploader(db, e, async () => { notice('Capa atualizada.'); await load(); }, error => notice(errorMessage(error), true)));
     if (groupsReady) element.append(groupManager(e, combatGroups.filter(group => group.event_id === e.id), async group => {
       check(await db.rpc('save_combat_group', { p_event_id: e.id, p_name: group.name, p_capacity: group.capacity, p_group_id: group.id }));
       notice('Grupo salvo. O limite total do evento continua valendo.'); await load();
@@ -186,11 +194,22 @@ async function load() {
     capacityForm.addEventListener('submit', event => {
       event.preventDefault();
       action(capacitySubmit, async () => {
+        if (e.split_teams) {
+          const total = Number(capacityInput.value);
+          if (!Number.isInteger(total) || total < 2 || total % 2) throw new Error('Informe um total par: metade PMC e metade CAMUFLADO.');
+        }
         check(await db.from('events').update({ capacity: capacityInput.value === '' ? null : Number(capacityInput.value) }).eq('id', e.id));
         notice('Capacidade atualizada.'); await load();
       });
     });
     element.append(capacityForm);
+    if (e.split_teams) { capacityInput.required = true; capacityInput.step = '2'; element.append(paragraph(`PMC: ${e.capacity/2} vagas · CAMUFLADO: ${e.capacity/2} vagas.`)); }
+    else if (!combatGroups.some(group => group.event_id === e.id)) element.append(button('Configurar PMC e CAMUFLADO', async () => {
+      const total = Number(capacityInput.value);
+      if (!Number.isInteger(total) || total < 2 || total % 2) throw new Error('Preencha uma capacidade total par, a partir de 2.');
+      check(await db.rpc('enable_split_teams', { p_event_id:e.id,p_capacity:total }));
+      notice('Times configurados. As inscrições antigas foram preservadas.'); await load();
+    }));
     const participants = document.createElement('div');
     element.append(button('Ver inscrições ativas', async () => {
       const rows = check(await db.from('registrations').select('*').eq('event_id', e.id).eq('status', 'active').order('created_at'));
@@ -220,7 +239,10 @@ async function load() {
     element.append(paragraph(r.events ? `${r.events.title} · ${dateTime(r.events.starts_at)}`
       : 'Inscrição registrada. Este evento não está disponível no catálogo.'));
     if (r.combat_group_id) element.append(paragraph('Grupo: ' + (combatGroups.find(group => group.id === r.combat_group_id)?.name || 'Grupo registrado')));
-    else element.append(paragraph('Sem grupo (inscrição original ou evento sem grupos).'));
+    else {
+      element.append(paragraph('Sem time escolhido (inscrição original preservada).'));
+      if (r.status === 'active') { const choose = document.createElement('a'); choose.href = 'game.html?id=' + encodeURIComponent(r.event_id) + '#game-groups'; choose.textContent = 'Escolher meu time'; element.append(choose); }
+    }
     element.append(paragraph(r.status === 'cancelled' ? 'Inscrição cancelada.' : 'Inscrição ativa.'));
     if (r.status !== 'cancelled') element.append(button('Cancelar minha inscrição', () => cancelRegistration(r.id)));
     $('my-registrations').append(element);
@@ -277,6 +299,8 @@ $('event-form')?.addEventListener('submit', event => {
     if (!(start > new Date()) || !(end > start)) throw new Error('Escolha um início no futuro e um fim posterior ao início.');
     const title = values.get('title').trim(), location = values.get('location').trim();
     if (!title || !location) throw new Error('Informe título e local do evento.');
+    const total = Number(values.get('capacity'));
+    if (!Number.isInteger(total) || total < 2 || total % 2) throw new Error('Informe uma capacidade total par: metade PMC e metade CAMUFLADO.');
     check(await db.from('events').insert({ organizer_id: session.user.id, title,
       location, description: values.get('description').trim(), starts_at: start.toISOString(), ends_at: end.toISOString(),
       status: values.get('status'), price_cents: Math.round(Number(values.get('price')) * 100),
