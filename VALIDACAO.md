@@ -165,3 +165,18 @@ validou criação com capacidade, ajuste da capacidade, cancelamento pelo jogado
 e organizador, liberação da vaga e reinscrição, além dos filtros, login e logout.
 A migração já está aplicada no projeto atual e não deve ser repetida.
 Domínio próprio, SMTP e recuperação real completa de senha continuam pendentes.
+
+## Branch de revisão visual (main preservada)
+
+`feature/catalogo-visual` parte da main 82f630e e integra o catálogo visual ao
+Supabase, sem importar dados de demonstração. Build e 26 testes Playwright
+passaram; PostgreSQL 17 isolado validou as três migrações, grants por coluna
+da apresentação e os cenários concorrentes de vagas/cancelamento. Capturas
+foram feitas com o evento público real em 390 px e 1440 px; layout também
+testado em 320 px. Detalhes e arquivos em `docs/VISUAL-REVIEW.md`.
+
+As referências foram bloqueadas pelo proxy (403); gravação ainda não recebida.
+A migração 003 é opcional e não foi aplicada no Supabase. A homologação remota
+autenticada desta revisão está pendente: credenciais temporárias arquivadas
+falharam no login (HTTP 400), sem escrita de eventos ou alteração de senhas.
+Main/Pages e PR #1 não foram alterados. SMTP e recuperação real seguem pendentes.

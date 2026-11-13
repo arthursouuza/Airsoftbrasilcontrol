@@ -1,10 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_KEY, emailRedirectUrl } from './config.js';
+import { posterCard, renderRecents, renderTeams, renderGame, metadataEditor } from './catalogue.js';
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 let session = null;
 let generation = 0;
+const gamePage = document.body.dataset.page === 'game';
+const gameId = new URLSearchParams(window.location.search).get('id');
+const validGameId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(gameId || '');
+if (gamePage) {
+  $('catalogue-home').hidden = true;
+  $('game-view').hidden = false;
+  $('game-view').textContent = 'Carregando jogo…';
+}
 let filters = { title: '', location: '', date: '' };
+$('filters-panel').open = !window.matchMedia('(max-width:650px)').matches;
 const literalPattern = text => '%' + text.replace(/[\\%_]/g, '\\$&') + '%';
 function publicEventsQuery() {
   let query = db.from('events').select('*').eq('status', 'published').gt('starts_at', new Date().toISOString()).order('starts_at');
@@ -60,27 +70,45 @@ async function cancelRegistration(id) {
   notice('Inscrição cancelada. O banco libera a vaga somente no primeiro cancelamento.');
   await load();
 }
+async function registerForEvent(event) {
+  if (!session) {
+    document.getElementById('auth').scrollIntoView();
+    document.getElementById('auth-form').elements.email.focus();
+    return;
+  }
+  check(await db.from('registrations').insert({ event_id: event.id, player_id: session.user.id }));
+  notice('Inscrição realizada. Combine o pagamento com o organizador.');
+  await load();
+}
 async function load() {
   const current = ++generation;
   const user = session?.user;
-  const [events, mine, registrations] = await Promise.all([
+  const [events, mine, registrations, teams, detail] = await Promise.all([
     publicEventsQuery(),
     user ? db.from('events').select('*').eq('organizer_id', user.id).order('starts_at') : { data: [] },
-    user ? db.from('registrations').select('id,event_id,status,events(title,starts_at,status)').eq('player_id', user.id) : { data: [] }
+    user ? db.from('registrations').select('id,event_id,status,events(title,starts_at,status)').eq('player_id', user.id) : { data: [] },
+    user ? db.from('teams').select('id,name,description').order('created_at', { ascending: false }).limit(12) : { data: [] },
+    gamePage && validGameId ? db.from('events').select('*').eq('id', gameId).limit(1) : { data: [] }
   ]);
   if (current !== generation) return;
   const publicEvents = check(events), myEvents = check(mine), myRegistrations = check(registrations);
   const joined = new Set(myRegistrations.filter(r => r.status !== 'cancelled').map(r => r.event_id));
+  renderRecents(publicEvents);
+  renderTeams(teams.data || [], session, !!teams.error);
+  if (gamePage) renderGame(detail.data?.[0], {
+    session, joined: joined.has(gameId), onRegister: registerForEvent,
+    onError: error => notice(errorMessage(error), true)
+  });
+  if (gamePage && detail.error) notice('Não foi possível carregar o jogo. Confira sua conexão e atualize a página.', true);
   $('events').replaceChildren(); $('my-events').replaceChildren(); $('my-registrations').replaceChildren();
   for (const e of publicEvents) {
-    const element = card(e);
+    const element = posterCard(e);
     if (joined.has(e.id)) element.append(paragraph('Inscrição confirmada.'));
     else if (e.capacity != null && e.active_registration_count >= e.capacity) element.append(paragraph('Lotado.'));
-    else element.append(button(user ? 'Inscrever-me' : 'Entre para se inscrever', async () => {
-      if (!session) { $('auth').scrollIntoView(); $('auth-form').elements.email.focus(); return; }
-      check(await db.from('registrations').insert({ event_id: e.id, player_id: session.user.id }));
-      notice('Inscrição realizada. Combine o pagamento com o organizador.'); await load();
-    }));
+    else {
+      const signup = button(user ? 'Inscrever-me' : 'Entre para se inscrever', () => registerForEvent(e));
+      signup.classList.add('poster-action'); element.append(signup);
+    }
     $('events').append(element);
   }
   const filtered = Object.values(filters).some(Boolean);
@@ -90,6 +118,11 @@ async function load() {
     : 'Ainda não há próximos eventos publicados.'));
   for (const e of myEvents) {
     const element = card(e); element.append(paragraph({ draft: 'Rascunho', published: 'Publicado', cancelled: 'Cancelado' }[e.status]));
+    const presentation = metadataEditor(e, async data => {
+      check(await db.from('events').update(data).eq('id', e.id));
+      notice('Apresentação atualizada.'); await load();
+    }, error => notice(errorMessage(error), true));
+    if (presentation) element.append(presentation);
     element.append(paragraph(`${e.active_registration_count ?? 0} inscrição(ões) ativa(s).`));
     const capacityForm = document.createElement('form');
     const capacityLabel = document.createElement('label'); capacityLabel.textContent = 'Capacidade de vagas';
@@ -145,6 +178,10 @@ async function load() {
 async function syncSession(next) {
   session = next;
   $('auth').hidden = !!session; $('account').hidden = !session; $('logout').hidden = !session;
+  document.querySelectorAll('[data-account-link]').forEach(link => {
+    link.href = session ? '#account' : '#auth';
+  });
+  document.querySelectorAll('[data-account-label]').forEach(label => { label.textContent = session ? 'Minha conta' : 'Entrar'; });
   $('profile-warning').textContent = '';
   if (session) {
     const user = session.user;
@@ -230,3 +267,13 @@ if (window.location.hash === '#forgot-password') {
   $('forgot-password').open = true;
   $('recovery-form').elements.email.focus();
 }
+function updateMobileNav() {
+  const hash = window.location.hash;
+  const active = ['#auth', '#account', '#forgot-password'].includes(hash) ? 'account'
+    : hash === '#teams' ? 'teams' : hash === '#catalogue' || gamePage ? 'games' : 'home';
+  document.querySelectorAll('[data-mobile]').forEach(link => {
+    if (link.dataset.mobile === active) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+}
+window.addEventListener('hashchange', updateMobileNav); updateMobileNav();

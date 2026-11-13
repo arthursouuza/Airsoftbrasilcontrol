@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild src/app.js --bundle --minify --outfile=connected.js && esbuild src/auth-callback.js --bundle --minify --outfile=auth-callback.js",
+    "build": "node scripts/build-pages.cjs && esbuild src/app.js --bundle --minify --outfile=connected.js && esbuild src/auth-callback.js --bundle --minify --outfile=auth-callback.js",
     "test": "playwright test",
     "start": "python3 -m http.server 8000 --bind 0.0.0.0",
     "test:isolation": "python3 scripts/check-isolation.py",

@@ -32,7 +32,7 @@ A sessão é persistida no navegador pelo SDK e renovada automaticamente.
 Cadastro, login, logout, criação de perfil após autenticação, eventos em
 rascunho ou publicados no catálogo, cancelamento de evento e inscrições sem
 pagamento automático. As datas do formulário usam o horário local do navegador
-e são gravadas em UTC. O site não fornece cancelamento de inscrição nesta etapa.
+e são gravadas em UTC. Cancelamento e reinscrição preservam o histórico.
 Qualquer conta autenticada pode organizar eventos, conforme a migração inicial.
 
 ## Validação e publicação
@@ -45,13 +45,16 @@ com uma conta confirmada (`node scripts/live-browser.cjs`). As credenciais
 ficam fora do repositório. O isolamento entre duas contas confirmadas passou nas seis tabelas. Consulte `VALIDACAO.md` para evidências e limites.
 As URLs de retorno do Supabase foram configuradas e verificadas. Consulte também `supabase/README.md`.
 
-## Página publicada e área conectada
+## Catálogo conectado — branch de revisão visual
 
-A demonstração atual de `main` foi preservada em `index.html`, `app.js` e
-`styles.css`. O link “Minha conta / Eventos reais” abre `connected.html`,
-a área autenticada, sem importar dados fictícios do localStorage. Os arquivos
-originais da demonstração e seu funcionamento estão descritos em
-`docs/DEMONSTRACAO.md`. O retorno de e-mail abre a área conectada.
+Nesta branch, `index.html` e `connected.html` abrem o mesmo catálogo real,
+e `game.html?id=<uuid>` apresenta um jogo. A entrada não carrega `app.js` ou
+`styles.css` da demonstração antiga e não importa `abc-demo-v1` nem outros
+dados locais. Esses arquivos legados permanecem no repositório por histórico;
+o comportamento antigo está documentado em `docs/DEMONSTRACAO.md`.
+A sessão do SDK continua persistida pelo mecanismo oficial de autenticação;
+os eventos, times e inscrições vêm do Supabase. O retorno do e-mail continua
+abrindo a área conectada.
 Configuração administrativa exata: `docs/REDIRECIONAMENTO.md`.
 
 ## Recuperação de senha
@@ -65,7 +68,8 @@ políticas de acesso permanecem obrigatórias. Veja [PENDENCIAS.md](PENDENCIAS.m
 
 ## Busca de eventos reais
 
-Em `connected.html`, use os campos Nome do evento, Local do evento e Data do
+No celular, abra **Filtrar jogos**; no computador o painel inicia aberto.
+Use os campos Nome do evento, Local do evento e Data do
 evento e clique em Filtrar eventos. Os critérios são combinados; nome e local
 buscam trechos sem distinguir maiúsculas/minúsculas. A data considera o dia
 de início no horário local do navegador, incluindo o início do dia e excluindo
@@ -83,3 +87,15 @@ cancelar inscrições pelo jogador ou organizador. Reserva e liberação são
 atômicas no banco. Inscrições canceladas permanecem no histórico; nova inscrição
 cria outra linha. Cancelamento não faz estorno automático de pagamentos.
 Eventos legados ficam sem limite definido até o organizador configurar um valor.
+
+## Revisão visual antes de atualizar main
+
+A branch `feature/catalogo-visual` contém catálogo preto/verde, cartazes,
+Começando em breve, Recém-chegados, Times e página do jogo. O PR #1 não foi
+mesclado e a main permanece inalterada. Leia o inventário, testes e pendências
+em [docs/VISUAL-REVIEW.md](docs/VISUAL-REVIEW.md).
+
+A migração opcional `202611130003_event_presentation.sql` prepara cartaz/capa,
+grupos, programação e regras editáveis apenas pelo organizador. Ela NÃO foi
+aplicada no Supabase. A interface funciona sem esses campos; mostra o título
+real como cartaz tipográfico e informa dados ainda não cadastrados.

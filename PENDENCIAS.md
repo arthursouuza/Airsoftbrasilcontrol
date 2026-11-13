@@ -35,3 +35,11 @@ dependendo de receber e confirmar o e-mail pelo serviço atual.
 Cada melhoria requer implementação e validação próprias; esta lista não indica
 que os recursos já existem. Priorização sugerida após os filtros: edição de eventos,
 controle de vagas e cancelamento, painel de inscritos.
+
+## Revisão visual em branch separada
+
+- Branch `feature/catalogo-visual`; main e PR #1 preservados.
+- Referências bloqueadas pelo proxy; comparação com a gravação ainda pendente.
+- Migração opcional 003 e cadastro de cartazes/capa/grupos/regras reais pendentes.
+- Homologação autenticada real com credenciais de teste válidas pendente.
+- Prévia e detalhes: `docs/VISUAL-REVIEW.md`. Não publicar antes da revisão.
