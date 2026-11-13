@@ -44,4 +44,4 @@ for table in ['profiles', 'teams', 'team_members', 'events', 'registrations', 'p
 status, data = request('/rest/v1/events?select=id,status&status=neq.published&limit=1')
 assert status == 200 and data == [], (status, data)
 print('PASS: consulta anônima não retorna rascunhos ou eventos cancelados')
-print('PENDENTE: segunda conta confirmada para testar isolamento completo entre usuários')
+print('Para validar isolamento autenticado, execute npm run test:isolation (duas contas confirmadas).')

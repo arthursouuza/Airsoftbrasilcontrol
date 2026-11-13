@@ -77,19 +77,18 @@ interceptação de requisições no navegador com a origem e o subdiretório do 
 com autenticação real no Supabase, abriram a área conectada e processaram o
 callback removendo os tokens da URL. Esse teste não acessa o site público.
 
-## Pendente antes da publicação
+## Revisão para publicação
 
-Site URL e Redirect URL foram salvas e verificadas por comportamento do Auth.
-A rede do ambiente continua bloqueando a URL do GitHub
-Pages com HTTP 403; foi salvo um rascunho que adiciona `arthursouuza.github.io`
-aos destinos, preservando o Supabase. É necessário revisar, salvar e publicar
-essa configuração do ambiente para validar o site público. Isso não publica
-o site. A publicação do site aguarda esses passos; o callback público somente
-poderá ser verificado depois que seus arquivos estiverem na hospedagem.
+A política de rede foi aplicada e tanto o GitHub Pages quanto o Supabase
+responderam HTTP 200. Os sete testes Playwright e os testes reais de login,
+eventos, inscrições, sessão, logout, callback e isolamento entre duas contas
+nas seis tabelas passaram novamente na revisão para publicação.
 
-O `main` remoto continha uma demonstração mais recente que o checkout inicial.
-Essa página e seus recursos foram preservados; a integração está em
-`connected.html`, acessível pelo link adicionado ao menu. Não foi publicada.
+A demonstração publicada foi preservada: a área autenticada está em
+`connected.html`, acessível pelo link no menu. Os scripts `live-browser.cjs`
+e `live-callback.cjs` também aceitam o endereço público para homologação após
+a publicação. A verificação da revisão publicada é feita por comparação dos
+arquivos estáticos com o commit enviado e repetição dos fluxos reais.
 
 A conta de teste usa senha temporária. Antes de uso pessoal definitivo, o usuário
 deve definir sua própria senha pelo fluxo de recuperação do Supabase.

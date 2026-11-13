@@ -12,6 +12,9 @@ const key = config.match(/SUPABASE_KEY = '([^']+)'/)[1];
  const browser=await chromium.launch({executablePath:'/usr/bin/chromium',args:['--no-sandbox'],proxy:proxy?{server:proxy,bypass:'127.0.0.1,localhost'}:undefined});
  const context=await browser.newContext();const page=await context.newPage();
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ if(process.env.ABC_TEST_SITE_URL?.startsWith('https://arthursouuza.github.io/')) {
+  await page.route('https://arthursouuza.github.io/**',async route=>{try {await route.fulfill({response:await route.fetch()});}catch{if(!page.isClosed())await route.abort().catch(()=>{});}});
+ }
  await page.route(base+'/**',async route=>{try {const response=await route.fetch();await route.fulfill({response});} catch {if(!page.isClosed()) await route.abort().catch(()=>{});}});
  async function api(path, options={}, anonymous=false){
   const response=await context.request.fetch(base+path,{...options,headers:{apikey:key,...(!anonymous?{Authorization:'Bearer '+auth.access_token}:{}),'Content-Type':'application/json',Prefer:'return=representation'}});
@@ -20,6 +23,9 @@ const key = config.match(/SUPABASE_KEY = '([^']+)'/)[1];
  let eventId;
  const title='TESTE DE INTEGRAÇÃO · '+new Date().toISOString();
  try {
+  const login=await context.request.post(base+'/auth/v1/token?grant_type=password',{headers:{apikey:key},data:{email:auth.email,password:auth.password}});
+  assert.equal(login.status(),200,'Login real indisponível');
+  const fresh=await login.json();auth.access_token=fresh.access_token;auth.user_id=fresh.user.id;
   await page.goto(process.env.ABC_TEST_SITE_URL || 'http://127.0.0.1:8000/connected.html');
   await page.getByLabel('E-mail',{exact:true}).fill(auth.email);await page.getByLabel('Senha',{exact:true}).fill(auth.password);
   await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page.locator('#account')).toBeVisible();

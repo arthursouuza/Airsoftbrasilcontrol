@@ -43,7 +43,7 @@ cinco tabelas privadas, bloqueio de escrita sem login e ausência de rascunhos
 na consulta pública. O teste real de login, criação de eventos, inscrições, sessão e logout passou
 com uma conta confirmada (`node scripts/live-browser.cjs`). As credenciais
 ficam fora do repositório. O isolamento entre duas contas confirmadas passou nas seis tabelas. Consulte `VALIDACAO.md` para evidências e limites.
-A publicação ainda depende da configuração de retorno no Supabase. Consulte também `supabase/README.md`.
+As URLs de retorno do Supabase foram configuradas e verificadas. Consulte também `supabase/README.md`.
 
 ## Página publicada e área conectada
 
