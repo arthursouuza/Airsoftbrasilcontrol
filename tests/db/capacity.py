@@ -79,7 +79,10 @@ try:
     legacy_reg = sql(register(legacy), A)
     sql(f"insert into public.payments(registration_id,amount_cents,method) values('{legacy_reg}',0,'manual_pix');", C)
     sql((ROOT / 'supabase/migrations/202611130002_capacity_cancellations.sql').read_text())
+    verify_presentation = (ROOT / 'supabase/verificar_apresentacao.sql').read_text()
+    assert sql(verify_presentation) == '0|0|t|f|3'
     sql((ROOT / 'supabase/migrations/202611130003_event_presentation.sql').read_text())
+    assert sql(verify_presentation) == '5|5|t|t|3'
     sql(f"update public.events set poster_url='https://example.test/poster.jpg', groups='Grupo de teste' where id='{legacy}';", C)
     sql(f"update public.events set groups='ALTERACAO ALHEIA' where id='{legacy}';", B)
     assert sql(f"select groups from public.events where id='{legacy}';") == 'Grupo de teste'

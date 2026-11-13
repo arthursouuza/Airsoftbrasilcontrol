@@ -99,3 +99,14 @@ A migração opcional `202611130003_event_presentation.sql` prepara cartaz/capa,
 grupos, programação e regras editáveis apenas pelo organizador. Ela NÃO foi
 aplicada no Supabase. A interface funciona sem esses campos; mostra o título
 real como cartaz tipográfico e informa dados ainda não cadastrados.
+
+## Migração 003 e login seguro para a revisão
+
+Guia para preservar dados e conferir as cinco colunas opcionais:
+[docs/APLICAR-003.md](docs/APLICAR-003.md). Consulta única de verificação:
+`supabase/verificar_apresentacao.sql`.
+
+Para homologar login, evento, inscrição e cancelamento sem transmitir senha
+no chat, execute `npm run test:manual` no seu computador e entre diretamente
+no navegador. Preparação e resultados esperados em
+[docs/VALIDACAO-MANUAL.md](docs/VALIDACAO-MANUAL.md). A main continua inalterada.

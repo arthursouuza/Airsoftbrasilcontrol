@@ -180,3 +180,12 @@ A migração 003 é opcional e não foi aplicada no Supabase. A homologação re
 autenticada desta revisão está pendente: credenciais temporárias arquivadas
 falharam no login (HTTP 400), sem escrita de eventos ou alteração de senhas.
 Main/Pages e PR #1 não foram alterados. SMTP e recuperação real seguem pendentes.
+
+## Continuação da revisão visual a partir de 8966eee
+
+27 testes de interface passaram, incluindo o novo roteiro de login manual
+com API simulada. O PostgreSQL isolado confere a migração 003 e o diagnóstico
+único antes/depois, além de concorrência, cancelamentos e permissões existentes.
+A migração remota e a execução real com login manual continuam pendentes.
+A gravação não estava acessível e as referências retornaram 403; não houve
+comparação visual com vídeo. Main e PR #1 continuam preservados.

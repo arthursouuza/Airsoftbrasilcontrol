@@ -72,7 +72,8 @@ seu preço/local/vagas reais; não usam os fixtures dos testes.
 ## Testes e limites
 
 - `npm run build`: passou.
-- `npm test`: 26 testes passaram (18 anteriores e 8 de catálogo/detalhe/navegação).
+- `npm test`: 27 testes passaram (18 anteriores, 8 de catálogo/detalhe/navegação
+  e 1 do roteiro de revisão manual com API simulada).
   O teste móvel de filtros foi adaptado para abrir o painel recolhível.
 - Telas verificadas em 320 e 390 px (celular) e 1440 px (desktop), sem rolagem
   horizontal, com navegação, detalhe, filtros e estados de ausência.
@@ -128,3 +129,26 @@ A prévia ainda não está publicada no GitHub Pages.
 
 Domínio próprio, Resend/SMTP e validação real completa da recuperação de senha
 continuam adiados. Confirmação de e-mail e regras de acesso permanecem ativas.
+
+## Continuação a partir de 8966eee
+
+A gravação mencionada não chegou como anexo/arquivo acessível nesta etapa.
+As referências continuam retornando 403 do proxy. Portanto não foram feitos
+ajustes de fidelidade alegando comparação com o vídeo; a prévia visual atual
+foi preservada. É necessário anexar novamente a gravação para essa comparação.
+
+A migração 003 foi revisada e ganhou guia (`docs/APLICAR-003.md`) e consulta
+única de verificação (`supabase/verificar_apresentacao.sql`). Os testes locais
+validam os resultados antes e depois da migração, além da preservação de dados
+e políticas. Não foi aplicada no Supabase.
+
+O roteiro `npm run test:manual` abre um navegador no computador do usuário,
+aguarda o login digitado exclusivamente no site e automatiza somente um evento
+novo de teste. Não lê/exporta senha ou tokens. Instruções completas em
+`docs/VALIDACAO-MANUAL.md`. Esse roteiro foi validado com API simulada; a
+homologação real continua pendente do login manual. Não foram repetidas
+tentativas com as credenciais temporárias antigas.
+
+Arquivos adicionados nesta continuação: `scripts/manual-review.cjs`,
+`supabase/verificar_apresentacao.sql`, `docs/APLICAR-003.md` e
+`docs/VALIDACAO-MANUAL.md`. Atualizados também package.json e os testes locais.

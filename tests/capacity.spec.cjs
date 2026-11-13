@@ -9,7 +9,8 @@ async function setup(page,full=false){
   if(u.pathname.endsWith('/token'))data={access_token:'test-token',refresh_token:'test-refresh',token_type:'bearer',expires_in:3600,user};
   else if(u.pathname.endsWith('/profiles'))data=[{id:user.id}];
   else if(u.pathname.endsWith('/events')){
-   if(method==='PATCH'){
+   if(method==='POST'){Object.assign(event,r.postDataJSON(),{active_registration_count:0});status=201;data=null;}
+   else if(method==='PATCH'){
     const body=r.postDataJSON();patches.push(body);
     if(body.capacity!==null&&body.capacity<event.active_registration_count){status=400;data={code:'23514',message:'constraint'};}
     else{Object.assign(event,body);data=null;}
@@ -39,4 +40,11 @@ test('lotação e erro de redução de capacidade são exibidos (API simulada)',
  await login(page);const input=page.locator('#my-events').getByLabel('Capacidade de vagas');await expect(input).toHaveAttribute('min','1');
  await page.locator('#my-events form').evaluate(f=>f.noValidate=true);await input.fill('0');await page.getByRole('button',{name:'Atualizar capacidade'}).click();await expect(page.locator('#notice')).toContainText('capacidade não pode ser menor');expect(state.event.capacity).toBe(1);
  await input.fill('2');await page.getByRole('button',{name:'Atualizar capacidade'}).click();await expect(page.locator('#notice')).toHaveText('Capacidade atualizada.');await expect(page.locator('#events')).toContainText('1 vaga(s) disponível(is) de 2');
+});
+
+test('roteiro de revisão com login manual não precisa ler senha ou token (API simulada)',async({page})=>{
+ const {runSignedInReview}=require('../scripts/manual-review.cjs');
+ const state=await setup(page);await page.goto('/connected.html');await login(page);
+ await runSignedInReview(page);
+ expect(state.event.status).toBe('cancelled');expect(state.event.active_registration_count).toBe(0);expect(state.registrations.every(r=>r.status==='cancelled')).toBe(true);
 });

@@ -9,7 +9,8 @@
     "start": "python3 -m http.server 8000 --bind 0.0.0.0",
     "test:isolation": "python3 scripts/check-isolation.py",
     "test:capacity:db": "python3 tests/db/capacity.py",
-    "test:capacity:remote": "python3 scripts/check-capacity-remote.py"
+    "test:capacity:remote": "python3 scripts/check-capacity-remote.py",
+    "test:manual": "node scripts/manual-review.cjs"
   },
   "repository": {
     "type": "git",
