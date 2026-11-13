@@ -1,0 +1,39 @@
+name: Supabase integration checks (no deployment)
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/supabase-auth]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:db
+        env:
+          TEST_DATABASE_URL: postgres://postgres@127.0.0.1:5432/postgres
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Browser checks with mock HTTP (not real Supabase)
+        run: |
+          npm run preview -- --port 4173 > /tmp/abc-preview.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:4173/connected.html >/dev/null && break; sleep 1; done
+          npm run test:browser

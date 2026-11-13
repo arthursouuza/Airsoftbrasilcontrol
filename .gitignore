@@ -1,0 +1,9 @@
+node_modules/
+dist/
+work/
+.env
+.env.*
+!.env.example
+supabase-config.json
+supabase/.temp/
+supabase/.branches/

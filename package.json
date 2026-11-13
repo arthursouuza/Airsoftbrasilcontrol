@@ -1,0 +1,24 @@
+{
+  "name": "airsoft-brasil-control",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build && node scripts/config.mjs dist",
+    "config:local": "node --env-file=.env scripts/config.mjs .",
+    "preview": "vite preview --host 127.0.0.1",
+    "test:db": "node tests/database.mjs",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.119.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "pg": "8.23.1",
+    "vite": "8.3.8"
+  }
+}
