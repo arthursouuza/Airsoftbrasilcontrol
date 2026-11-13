@@ -88,10 +88,14 @@ try:
     sql(f"insert into auth.users values ('{A}'),('{B}'),('{C}');")
     for migration in ['0001_initial_schema','0002_capacity_cancellations']:
         sql((ROOT / f'supabase/migrations/20261113{migration}.sql').read_text())
+    preflight=(ROOT/'supabase/verificar_pre_requisitos_003_004.sql').read_text()
+    assert sql(preflight)=='t|ausente|ausente|0|0|3|0'
+    assert sql('begin; alter table public.events add column poster_url text;\n'+preflight+'\nrollback;')=='t|parcial|ausente|1|0|3|0'
     legacy=event(10); legacy_reg=sql(register(legacy),A)
     sql(f"insert into public.payments(registration_id,amount_cents,method) values('{legacy_reg}',0,'manual_pix');",C)
     migration=(ROOT/'supabase/migrations/202611130004_combat_groups.sql').read_text()
     sql(migration)
+    assert sql(preflight)=='t|ausente|completa|0|0|3|3'
     # A segunda aplicação falha dentro de BEGIN e não desfaz a primeira.
     sql(migration,error='42P07')
     assert count(legacy)=='1/10'
@@ -103,7 +107,8 @@ try:
     assert count(legacy)=='0/10'
     print('PASS migração sem 003 preserva pagamentos/inscrições legadas; grupo obrigatório só nas novas inscrições')
     sql((ROOT/'supabase/migrations/202611130003_event_presentation.sql').read_text())
-    print('PASS 003 editorial também pode ser aplicada após 004, sem conflito')
+    assert sql(preflight)=='t|completa|completa|5|5|3|3'
+    print('PASS diagnóstico distingue ausente/parcial/completa e 003 editorial pode ser aplicada após 004')
 
     e=event(10);g=group(e)
     overlap(grouped(e,g),A,grouped(e,g),B,'P1002')

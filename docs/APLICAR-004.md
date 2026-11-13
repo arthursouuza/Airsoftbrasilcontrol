@@ -4,7 +4,7 @@ Arquivo: `supabase/migrations/202611130004_combat_groups.sql`.
 
 ## Aplicação no Supabase
 
-1. Abra o projeto correto no Supabase e entre em **SQL Editor → New query**.
+1. Abra o projeto correto no Supabase e entre em **SQL Editor → New query**. Execute primeiro `supabase/verificar_pre_requisitos_003_004.sql`: execute a 004 somente se `base_001_002_ok = true` e `migracao_004 = ausente`. Se estiver completa, não repita; se estiver parcial, confira os objetos antes de qualquer alteração.
 2. Copie o conteúdo completo de `202611130004_combat_groups.sql`, incluindo `begin;` e `commit;`, e execute uma única vez.
 3. Não repita 001 ou 002. A 004 pressupõe essas migrações já aplicadas. A 003 é editorial/opcional e não é necessária para a 004.
 4. Abra outra consulta, copie `supabase/verificar_grupos.sql` por inteiro e execute.
@@ -52,3 +52,5 @@ Cenários: preservação do legado/pagamentos; aplicação sem 003; compatibilid
 Os testes Playwright usam API simulada e cobrem escolha obrigatória, grupo lotado, retorno ao grupo escolhido após login, reserva explícita, cancelamento, gestão por RPC, participantes, falhas de consulta, compatibilidade anterior à migração e layout em celular/computador. As capturas de grupos são identificadas **TESTE LOCAL** e não representam grupos já cadastrados na Operação Carandiru.
 
 Depois de aplicar no Supabase e liberar uma prévia acessível, falta validar ponta a ponta com duas contas confirmadas, em evento exclusivo de teste: criar dois grupos, disputar última vaga, conferir mensagens/ocupação e cancelar. Cada titular digita a senha no próprio site; nenhuma senha ou chave secreta deve ser enviada no chat. Não publicar nem atualizar a main antes da revisão autorizada.
+
+O acompanhamento completo com duas contas está em `HOMOLOGACAO-GRUPOS-DUAS-CONTAS.md`. Diagnóstico pelo SQL Editor e homologação remota ainda não foram concluídos.
