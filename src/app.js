@@ -94,6 +94,7 @@ async function load() {
   const publicEvents = check(events), myEvents = check(mine), myRegistrations = check(registrations);
   const joined = new Set(myRegistrations.filter(r => r.status !== 'cancelled').map(r => r.event_id));
   renderRecents(publicEvents);
+  $('show-more-games').hidden = publicEvents.length < 2;
   renderTeams(teams.data || [], session, !!teams.error);
   if (gamePage) renderGame(detail.data?.[0], {
     session, joined: joined.has(gameId), onRegister: registerForEvent,
@@ -113,6 +114,7 @@ async function load() {
   }
   const filtered = Object.values(filters).some(Boolean);
   $('filter-status').textContent = filtered ? 'Filtros aplicados ao catálogo público.' : '';
+  $('location-chip-label').textContent = filters.location || 'Todo o Brasil';
   if (!publicEvents.length) $('events').append(paragraph(filtered
     ? 'Nenhum evento encontrado com esses filtros. Tente outros termos ou limpe os filtros.'
     : 'Ainda não há próximos eventos publicados.'));
@@ -182,6 +184,8 @@ async function syncSession(next) {
     link.href = session ? '#account' : '#auth';
   });
   document.querySelectorAll('[data-account-label]').forEach(label => { label.textContent = session ? 'Minha conta' : 'Entrar'; });
+  document.querySelectorAll('[data-mobile-account-label]').forEach(label => { label.textContent = session ? 'Conta' : 'Entrar'; });
+  document.querySelectorAll('[data-registration-link]').forEach(link => { link.href = session ? '#my-registrations' : '#auth'; });
   $('profile-warning').textContent = '';
   if (session) {
     const user = session.user;
@@ -234,6 +238,18 @@ $('resend-confirmation').addEventListener('click', () => action($('resend-confir
   notice('Se houver um cadastro pendente para este e-mail, você receberá um novo link de confirmação.');
 }));
 $('reload').addEventListener('click', () => action($('reload'), load));
+function openSearch(field = 'title') {
+  $('filters-panel').open = true;
+  $('filters-panel').scrollIntoView({ block: 'start' });
+  $('event-filters').elements[field].focus();
+}
+$('location-chip').addEventListener('click', () => openSearch('location'));
+document.querySelectorAll('[data-search-link]').forEach(link => link.addEventListener('click', event => {
+  if (gamePage) return;
+  event.preventDefault(); window.location.hash = 'catalogue'; openSearch();
+}));
+$('show-more-games').addEventListener('click', () => $('events').scrollBy({ left: $('events').clientWidth * .8, behavior: 'smooth' }));
+$('show-more-recent').addEventListener('click', () => $('recent-events').scrollBy({ left: $('recent-events').clientWidth * .8, behavior: 'smooth' }));
 $('event-filters').addEventListener('submit', event => {
   event.preventDefault();
   const values = new FormData(event.currentTarget);
@@ -270,7 +286,7 @@ if (window.location.hash === '#forgot-password') {
 function updateMobileNav() {
   const hash = window.location.hash;
   const active = ['#auth', '#account', '#forgot-password'].includes(hash) ? 'account'
-    : hash === '#teams' ? 'teams' : hash === '#catalogue' || gamePage ? 'games' : 'home';
+    : hash === '#my-registrations' ? 'registrations' : hash === '#catalogue' || gamePage ? 'search' : 'home';
   document.querySelectorAll('[data-mobile]').forEach(link => {
     if (link.dataset.mobile === active) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');

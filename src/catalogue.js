@@ -50,18 +50,17 @@ export function posterCard(event) {
   const body = node('div', undefined, 'poster-body');
   body.append(node('h3', event.title));
   const location = node('p', undefined, 'poster-meta'); location.append(node('span', '⌖'), document.createTextNode(event.location));
-  body.append(location, node('p', dateTime(event.starts_at)), node('p', available(event)), node('p', money(event.price_cents), 'poster-price'));
+  const caption = new Date(event.starts_at).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + event.location;
+  body.append(location, node('p', caption, 'poster-date-text'), node('p', available(event), 'poster-availability'), node('p', money(event.price_cents), 'poster-price'));
   link.append(art, body); card.append(link);
   return card;
 }
 export function renderRecents(events) {
   const container = $('recent-events'); container.replaceChildren();
   const recent = [...events].sort((a, b) => (Date.parse(b.created_at) || 0) - (Date.parse(a.created_at) || 0)).slice(0, 6);
+  $('show-more-recent').hidden = recent.length < 2;
   for (const event of recent) {
-    const link = node('a', undefined, 'recent-card'); link.href = 'game.html?id=' + encodeURIComponent(event.id);
-    const text = node('div'); text.append(node('strong', event.title), node('p', event.location));
-    const icon = arrow(); icon.classList.add('recent-arrow');
-    link.append(dayBadge(event.starts_at, 'recent-date'), text, icon); container.append(link);
+    const card = posterCard(event); card.classList.add('recent-poster'); container.append(card);
   }
   if (!recent.length) container.append(node('p', 'Nenhum jogo encontrado. Novos jogos aparecerão aqui quando forem publicados.', 'empty-panel'));
 }
@@ -91,7 +90,20 @@ export function renderGame(event, { session, joined, onRegister, onError }) {
   document.title = event.title + ' · Airsoft Brasil Control';
   const cover = node('div', undefined, 'game-cover'); const img = image(event.cover_url || event.poster_url, event.title);
   if (img) { img.loading = 'eager'; cover.append(img); }
-  const heading = node('div'); heading.append(node('p', 'AIRSOFT BRASIL CONTROL', 'eyebrow'), node('h1', event.title), node('p', event.location)); cover.append(heading);
+  const heading = node('div');
+  const longDate = new Date(event.starts_at).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const place = node('p', undefined, 'game-cover-location'); place.append(document.createTextNode(event.location));
+  if (Number.isInteger(event.active_registration_count)) place.append(node('span', ` · ${event.active_registration_count} inscrito(s)`, 'confirmed-count'));
+  heading.append(node('p', longDate, 'game-date'), node('h1', event.title), place); cover.append(heading);
+  const share = node('button', 'Compartilhar', 'share-game'); share.type = 'button'; share.setAttribute('aria-label', 'Compartilhar jogo');
+  share.addEventListener('click', async () => {
+    const url = new URL('game.html', window.location.href); url.searchParams.set('id', event.id);
+    try {
+      if (navigator.share) await navigator.share({ title: event.title, url: url.href });
+      else if (navigator.clipboard) { await navigator.clipboard.writeText(url.href); share.textContent = 'Link copiado'; }
+      else { share.textContent = 'Copie o endereço da página'; }
+    } catch (error) { if (error.name !== 'AbortError') share.textContent = 'Compartilhamento indisponível'; }
+  }); cover.append(share);
   const tabs = node('nav', undefined, 'game-tabs'); tabs.setAttribute('aria-label', 'Seções do jogo');
   for (const [id, title] of [['about','Sobre'],['tickets','Ingressos'],['groups','Grupos'],['schedule','Horários'],['location','Localização'],['rules','Regras']]) {
     const link = node('a', title); link.href = '#game-' + id; tabs.append(link);
@@ -102,31 +114,46 @@ export function renderGame(event, { session, joined, onRegister, onError }) {
     element.append(node('h2', title), node('p', text)); copy.append(element); return element;
   }
   section('about', 'Sobre o jogo', event.description || 'Descrição ainda não informada pelo organizador.');
-  section('groups', 'Grupos', event.groups || 'Grupos ainda não informados pelo organizador.');
+  section('groups', 'Grupos de combate', event.groups || 'Grupos ainda não informados pelo organizador.');
   const schedule = section('schedule', 'Horários', event.schedule || 'Horários de início e término informados pelo organizador.');
   const times = node('div', undefined, 'game-time');
-  for (const [label, value] of [['Início',event.starts_at],['Término',event.ends_at]]) {
-    const time = node('div'); time.append(node('strong', label), node('p', value ? dateTime(value) : 'Não informado')); times.append(time);
-  }
-  schedule.append(times);
+  for (const [label, value] of [['Horário de início',event.starts_at],['Horário de término',event.ends_at]]) {
+    const time = node('div');
+    time.append(node('strong', label), node('p', value ? new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Não informado'));
+    times.append(time);
+  } schedule.append(times);
   const location = section('location', 'Localização', event.location);
-  const map = node('a', 'Ver localização no mapa ', 'game-location-link'); map.append(arrow());
+  const map = node('a', 'Abrir localização no Maps ', 'game-location-link'); map.append(arrow());
   map.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(event.location); map.target = '_blank'; map.rel = 'noopener noreferrer'; location.append(map);
+  const locationRow = node('div', undefined, 'location-data'); locationRow.append(node('span', 'Nome do local'), node('strong', event.location)); location.append(locationRow);
   section('rules', 'Regras', event.rules || 'Regras ainda não informadas. Consulte o organizador antes de participar.');
-  const ticket = node('aside', undefined, 'card ticket-card'); ticket.id = 'game-tickets';
-  ticket.append(node('p', 'GARANTA SUA PARTICIPAÇÃO', 'eyebrow'), node('h2', 'Ingressos'), node('p', 'Inscrição individual'), node('p', money(event.price_cents), 'ticket-price'), node('p', available(event)));
-  if (joined) ticket.append(node('p', 'Inscrição confirmada.'));
-  else if (event.status !== 'published' || new Date(event.starts_at) <= new Date()) ticket.append(node('p', 'Inscrições indisponíveis para este jogo.'));
-  else if (event.capacity != null && event.active_registration_count >= event.capacity) ticket.append(node('p', 'Lotado.'));
-  else {
-    const button = node('button', session ? 'Inscrever-me' : 'Entre para se inscrever');
+  let pending = false;
+  const actions = [];
+  function registrationAction() {
+    if (joined) return node('p', 'Inscrição confirmada.', 'registration-state');
+    if (event.status !== 'published' || new Date(event.starts_at) <= new Date()) return node('p', 'Inscrições indisponíveis para este jogo.', 'registration-state');
+    if (event.capacity != null && event.active_registration_count >= event.capacity) return node('p', 'Lotado.', 'registration-state');
+    const label = session ? 'Inscrever-me' : 'Entre para se inscrever';
+    const button = node('button', label, 'game-register-action'); button.setAttribute('aria-label', label); actions.push(button);
     button.addEventListener('click', async () => {
-      if (button.disabled) return; button.disabled = true;
-      try { await onRegister(event); } catch (error) { onError(error); } finally { button.disabled = false; }
-    }); ticket.append(button);
+      if (pending) return; pending = true; actions.forEach(action => { action.disabled = true; });
+      try { await onRegister(event); } catch (error) { onError(error); }
+      finally { pending = false; actions.forEach(action => { action.disabled = false; }); }
+    }); return button;
   }
+  const availability = node('div', undefined, 'game-availability'); availability.append(registrationAction());
+  const ticket = node('aside', undefined, 'card ticket-card'); ticket.id = 'game-tickets';
+  ticket.append(node('p', 'GARANTA SUA PARTICIPAÇÃO', 'eyebrow'), node('h2', 'Ingressos'));
+  const option = node('div', undefined, 'ticket-option');
+  const symbol = arrow(); symbol.querySelector('path').setAttribute('d', 'M3 7h18v4a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4V7Zm6 0v3m0 2v2m0 2v2'); symbol.classList.add('ticket-symbol');
+  const rowArrow = arrow(); rowArrow.classList.add('ticket-arrow');
+  option.append(symbol, node('p', 'Inscrição individual', 'ticket-name'), node('p', money(event.price_cents), 'ticket-price'), rowArrow);
+  const ticketAction = registrationAction();
+  if (ticketAction.tagName === 'BUTTON') option.append(ticketAction);
+  ticket.append(option, node('p', available(event), 'ticket-availability'));
+  if (ticketAction.tagName !== 'BUTTON') ticket.append(ticketAction);
   ticket.append(node('small', 'Uma inscrição por jogador. Pagamento combinado diretamente com o organizador; não há cobrança automática.'));
-  layout.append(copy, ticket); view.append(cover, tabs, layout);
+  layout.append(copy, availability, ticket); view.append(cover, tabs, layout);
 }
 export function metadataEditor(event, onSave, onError) {
   if (!Object.hasOwn(event, 'poster_url')) return null;

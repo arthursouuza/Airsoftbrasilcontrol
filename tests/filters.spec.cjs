@@ -45,6 +45,6 @@ test('busca literal, resultado vazio e limpeza (API simulada)',async({page})=>{
  await page.getByRole('button',{name:'Limpar filtros',exact:true}).click();await expect(page.locator('#events h3')).toHaveCount(4);
 });
 test('celular permite preencher e limpar sem rolagem horizontal (API simulada)',async({page})=>{
- await setup(page);await page.setViewportSize({width:320,height:740});await page.goto('/connected.html');await page.getByText('Filtrar jogos',{exact:true}).click();await page.getByLabel('Local do evento',{exact:true}).fill('Curitiba');await page.getByRole('button',{name:'Filtrar eventos',exact:true}).click();await expect(page.locator('#events h3')).toHaveCount(3);
+ await setup(page);await page.setViewportSize({width:320,height:740});await page.goto('/connected.html');await page.getByRole('navigation',{name:'Navegação no celular'}).getByRole('link',{name:'Buscar',exact:true}).click();await page.getByLabel('Local do evento',{exact:true}).fill('Curitiba');await page.getByRole('button',{name:'Filtrar eventos',exact:true}).click();await expect(page.locator('#events h3')).toHaveCount(3);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.getByRole('button',{name:'Limpar filtros',exact:true}).click();await expect(page.locator('#events h3')).toHaveCount(4);
 });

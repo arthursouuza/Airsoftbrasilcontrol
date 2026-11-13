@@ -12,15 +12,14 @@ filtros de nome/local/data, inscrições, capacidade atômica, cancelamento e
 reinscrição, administração de capacidade e participantes pelo organizador.
 A página inicial antiga era uma demonstração local separada da área conectada.
 
-## Referências: acesso não confirmado
+## Referências e gravação recebida
 
 - https://airsoft-brasil-control-arthur.newimage3.chatgpt.site
 - https://combatzilla.com
 
 Ambas as tentativas retornaram 403 do proxy de rede, antes de acessar o site.
 Não foi possível verificar login, conteúdo, layout ou assets dessas páginas.
-A gravação mencionada ainda não foi anexada. O design foi implementado a partir
-dos requisitos escritos, sem afirmar reprodução fiel de uma referência vista.
+Posteriormente foi recebida e inspecionada a gravação `ScreenRecording_11-13-2026 01-18-47_1.mp4` (65 segundos). A revisão atual compara o catálogo (1–11 s), jogo (13–20 s), horários/localização e acesso (58 s) dessa gravação. Os links continuam sem acesso confirmado; a comparação visual usa o vídeo.
 
 Foi salvo um rascunho de rede que preserva Supabase/Pages e adiciona os domínios
 das referências. Para acessá-las neste ambiente é necessário revisar, salvar e
@@ -184,3 +183,17 @@ A referência adicional compartilhada pela Biblioteca do ChatGPT também retorno
 de um vídeo/imagem anexado diretamente ao chat ou acesso liberado à referência.
 Os ajustes de cor, largura e espaçamento desta revisão seguem a lista escrita
 pelo usuário, sem afirmar correspondência visual com esse arquivo.
+
+## Revisão com a gravação — 13/11/2026
+
+Cabeçalho compacto, chips Jogos/Times/local, banner central com CTA branco, verde #24d350, cartões sem moldura externa e navegação inferior flutuante. Um evento ocupa a largura disponível; vários usam faixa horizontal com cartões de aproximadamente 40%. Recém-chegados reutiliza cartazes reais. Buscar e Todo o Brasil abrem os filtros existentes; limpar continua disponível.
+
+No celular, o jogo usa capa alta, compartilhamento de URL limpa, descrição, inscrição, grupos, ingresso individual, horários, localização e regras. O compartilhamento não inclui fragmentos de autenticação. A navegação inferior fica apenas no catálogo, como no vídeo.
+
+Não foram copiados eventos, cartazes, avaliações, participantes, mercado ou autenticação por WhatsApp da demonstração. Permanecem o e-mail com confirmação e os fluxos reais do Supabase. Operação Carandiru ainda não possui fotografia cadastrada: cartaz e capa usam apresentação tipográfica, sem atribuir uma fotografia de outro evento. A migração 003 continua pendente; nenhuma migração foi executada nesta revisão.
+
+As capturas usam leitura pública real do Supabase, sem alterar inscrições. Os testes automatizados usam API simulada; login e operações autenticadas reais ainda dependem da validação manual segura do titular. SMTP e recebimento real de recuperação de senha continuam pendentes.
+
+Prévia interna: http://127.0.0.1:8000/ (HTTP 200). O relay de prévia deste ambiente está indisponível; não há link externo verificado. Main e GitHub Pages não são atualizados.
+
+Verificação desta revisão: build concluído e 30 testes Playwright aprovados (API simulada), incluindo compartilhamento sem parâmetros extras, acesso ao ingresso no celular, filtros e fluxos existentes. Capturas conferidas em 390 × 844 e desktop; testes de largura em 320, 390 e 1440 pixels.

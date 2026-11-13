@@ -24,7 +24,7 @@ test('página inicial lê Supabase, sem importar demonstração local (API simul
 test('jogo mostra conteúdo real, ingresso, horários, mapa e lacunas sem inventar (API simulada)',async({page})=>{
  await mock(page);await page.goto('/game.html?id='+id);await expect(page.locator('#game-view h1')).toHaveText(event.title);await expect(page.locator('#catalogue-home')).toBeHidden();
  await expect(page.locator('#game-about')).toContainText(event.description);expect(await page.locator('#game-about script').count()).toBe(0);
- await expect(page.locator('#game-tickets')).toContainText('R$ 50,00');await expect(page.locator('#game-tickets')).toContainText('99 vaga(s)');await expect(page.locator('#game-groups')).toContainText('Grupos ainda não informados');await expect(page.locator('#game-rules')).toContainText('Regras ainda não informadas');await expect(page.locator('#game-schedule')).toContainText('Término');
+ await expect(page.locator('#game-tickets')).toContainText('R$ 50,00');await expect(page.locator('#game-tickets')).toContainText('99 vaga(s)');await expect(page.locator('#game-groups')).toContainText('Grupos ainda não informados');await expect(page.locator('#game-rules')).toContainText('Regras ainda não informadas');await expect(page.locator('#game-schedule')).toContainText('Horário de término');
  await expect(page.locator('#game-location a')).toHaveAttribute('href',/query=Campo%20cadastrado/);
  await page.locator('#game-tickets').getByRole('button',{name:'Entre para se inscrever'}).click();await expect(page.locator('#auth-form input[name=email]')).toBeFocused();
 });
@@ -36,7 +36,7 @@ test('identificador inexistente não expõe rascunhos nem cria eventos falsos (A
 });
 for(const width of [320,390,1440])test('catálogo e página do jogo cabem na tela '+width,async({page})=>{
  await mock(page);await page.setViewportSize({width,height:844});await page.goto('/');await expect(page.locator('#events h3')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- if(width<650){await expect(page.getByRole('navigation',{name:'Navegação no celular'})).toBeVisible();await page.getByRole('navigation',{name:'Navegação no celular'}).getByRole('link',{name:'Times',exact:true}).click();await expect(page.locator('#teams-heading')).toBeInViewport();}
+ if(width<650){await expect(page.getByRole('navigation',{name:'Navegação no celular'})).toBeVisible();await page.getByRole('navigation',{name:'Navegação no celular'}).getByRole('link',{name:'Buscar',exact:true}).click();await expect(page.locator('#event-filters')).toBeVisible();await expect(page.locator('#event-filters input[name=title]')).toBeFocused();}
  else await expect(page.getByRole('navigation',{name:'Navegação no celular'})).toBeHidden();
  await page.goto('/game.html?id='+id);await expect(page.locator('#game-view h1')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
@@ -53,13 +53,27 @@ for(const width of [320,390])test('catálogo mobile usa largura total e faixa ho
  await page.setViewportSize({width,height:844});await mock(page);await page.goto('/');await expect(page.locator('#events h3')).toBeVisible();
  const widths=await page.locator('#events').evaluate(el=>({container:el.clientWidth,card:el.querySelector('article').getBoundingClientRect().width}));
  expect(widths.card/widths.container).toBeGreaterThan(.98);
- expect(await page.locator('.header-actions .button').evaluate(el=>getComputedStyle(el).backgroundColor)).toBe('rgb(0, 213, 99)');
+ expect(await page.locator('.publish-link').evaluate(el=>getComputedStyle(el).backgroundColor)).toBe('rgb(36, 211, 80)');
  await page.unroute(host+'/**');
  await mock(page,{events:[event,{...event,id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',title:'Segundo evento de teste'},{...event,id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',title:'Terceiro evento de teste'}]});
  await page.reload();await expect(page.locator('#events article')).toHaveCount(3);
  const dimensions=await page.locator('#events').evaluate(el=>({client:el.clientWidth,scroll:el.scrollWidth,first:el.children[0].getBoundingClientRect().width,secondTop:el.children[1].getBoundingClientRect().top,firstTop:el.children[0].getBoundingClientRect().top}));
- expect(dimensions.scroll).toBeGreaterThan(dimensions.client);expect(dimensions.first).toBeGreaterThan(dimensions.client*.75);expect(dimensions.secondTop).toBe(dimensions.firstTop);
+ expect(dimensions.scroll).toBeGreaterThan(dimensions.client);expect(dimensions.first).toBeGreaterThan(dimensions.client*.35);expect(dimensions.first).toBeLessThan(dimensions.client*.55);expect(dimensions.secondTop).toBe(dimensions.firstTop);
  await page.locator('#events').evaluate(el=>{el.scrollLeft=el.clientWidth;});
  expect(await page.locator('#events').evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+
+test('compartilhar remove parâmetros extras e mantém ingresso mobile acessível (API simulada)',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.addInitScript(()=>{
+  Object.defineProperty(navigator,'share',{value:undefined,configurable:true});
+  Object.defineProperty(navigator,'clipboard',{value:{writeText:async text=>{window.copiedGameUrl=text;}},configurable:true});
+ });
+ await mock(page);await page.goto('/game.html?id='+id+'&extra=nao-compartilhar#privado');
+ await page.getByRole('button',{name:'Compartilhar jogo'}).click();
+ await expect.poll(()=>page.evaluate(()=>window.copiedGameUrl)).toBe('http://127.0.0.1:8000/game.html?id='+id);
+ await expect(page.getByRole('navigation',{name:'Navegação no celular'})).toBeHidden();
+ await page.locator('#game-tickets').getByRole('button',{name:'Entre para se inscrever'}).click();
+ await expect(page.locator('#auth-form input[name=email]')).toBeFocused();
 });
