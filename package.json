@@ -10,7 +10,8 @@
     "test:isolation": "python3 scripts/check-isolation.py",
     "test:capacity:db": "python3 tests/db/capacity.py",
     "test:capacity:remote": "python3 scripts/check-capacity-remote.py",
-    "test:manual": "node scripts/manual-review.cjs"
+    "test:manual": "node scripts/manual-review.cjs",
+    "test:groups:db": "python3 tests/db/combat_groups.py"
   },
   "repository": {
     "type": "git",

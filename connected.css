@@ -244,3 +244,113 @@ body[data-page="account"] #account>h2{margin-top:30px}
  .poster-body .poster-date-text,#events>.poster-card:only-child .poster-body .poster-date-text{font-size:12px;white-space:normal;color:#b4bab6}
  .game-cover.is-typographic{min-height:230px;padding:80px 14px 20px}
 }
+
+.combat-group-choices{border:0;padding:0;margin:16px 0;min-width:0}
+.combat-group-choices legend{font-size:13px;margin-bottom:12px;color:var(--text)}
+.combat-group-choice{display:flex;align-items:center;gap:12px;padding:16px;background:#1c1c1f;border:1px solid #39393e;border-radius:12px;margin:8px 0;cursor:pointer}
+.combat-group-choice:has(input:checked){border-color:var(--green);background:#14351f}
+.combat-group-choice:has(input:disabled){opacity:.65;cursor:default}
+.combat-group-choice input{width:20px;min-height:20px;flex-shrink:0;accent-color:var(--green);margin:0}
+.combat-group-choice span{font-size:14px;overflow-wrap:anywhere}
+.combat-group-choice small{margin-left:auto;white-space:nowrap;font-size:12px;color:#b9c5bc}
+.combat-group-manager{margin:18px 0;border:1px solid #36383a;border-radius:10px;padding:15px}
+.combat-group-manager summary{cursor:pointer;color:var(--green)}
+.combat-group-manager p{font-size:13px;margin-top:12px}
+.combat-group-form{display:grid;gap:12px;margin:14px 0}
+.combat-group-edit{border-bottom:1px solid #36383a;margin:15px 0;padding-bottom:10px}
+.combat-group-edit h4{font-size:14px;line-height:1.6;margin:12px 0;overflow-wrap:anywhere}
+
+/* Referência definitiva: capturas fornecidas em 13/11/2026. */
+:root{--bg:#060805;--surface:#141711;--raised:#242620;--line:#383b31;--green:#0dce50;--muted:#a2a69d;--max:1240px}
+body{background:var(--bg);font-family:Arial,Helvetica,sans-serif;padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.site-header{position:sticky;top:0;max-width:none;padding:16px max(19px,calc((100% - var(--max))/2));height:82px;min-height:82px;gap:12px;border:0;background:linear-gradient(110deg,#1d1b18,#0f1e17);z-index:40}
+.site-header .brand,.site-footer .brand{display:flex;gap:3px;font-size:30px;color:white;min-height:48px;font-weight:900;letter-spacing:-1.5px;line-height:1}
+.brand-symbol{width:34px;height:44px;flex-shrink:0;color:#fff}
+.brand-wordmark{display:block}
+.site-header .brand small,.site-footer .brand small{font-size:9px;font-weight:900;letter-spacing:3px;line-height:1.5;margin:5px 0 0;color:#fff}
+.site-header .desktop-nav,.site-header .header-signin{display:none}
+.site-header .header-actions{gap:8px}
+.site-header .publish-link{display:inline-flex;min-height:40px;padding:10px 17px;font-size:12px;gap:3px;border-radius:999px;box-shadow:none;background:var(--green);color:#001b0b;font-weight:600}
+.publish-link>span{font-size:14px}
+.catalogue-chips{display:flex;align-items:center;gap:8px;position:sticky;top:82px;z-index:39;padding:8px max(19px,calc((100% - var(--max))/2)) 13px;min-height:60px;background:linear-gradient(110deg,#1d1b18,#0f1e17);border-bottom:1px solid #20281e;backdrop-filter:none}
+.filter-chip{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:37px;border:1px solid #414237;border-radius:999px;padding:8px 16px;font-size:12px;font-weight:500;background:transparent;color:#ddd;white-space:nowrap}
+.filter-chip.active{background:transparent;border-color:#414237}
+.location-chip{max-width:240px;gap:5px}
+main{padding-inline:19px}
+html{scroll-padding-top:160px}
+.catalogue-search{padding:53px 0 40px}
+.catalogue-search h1{font-size:20px;line-height:1.3;letter-spacing:-.6px;margin:0 0 31px;font-weight:700}
+#quick-search{width:100%;height:44px;min-height:44px;background:#151811;border:1px solid #3e4433;border-radius:10px;padding:11px 13px;color:#fff;font-size:14px;outline-offset:3px}
+#quick-search::placeholder{color:#7f8279}
+.catalogue-section{margin:0 0 36px;scroll-margin-top:160px}
+.catalogue-section>.section-title{margin-bottom:16px}
+.catalogue-section .section-title h2{font-size:20px;letter-spacing:-.5px}
+.catalogue-section .eyebrow,.catalogue-section .section-description,.green-dot{display:none}
+body[data-page="catalogue"] #catalogue>.section-title{display:none}
+body[data-page="catalogue"] #catalogue{position:relative;padding-top:12px}
+body[data-page="catalogue"] .catalogue-search{padding-bottom:24px}
+.filters-panel{margin-bottom:20px;border:1px solid #363c30;background:#11150f;border-radius:10px}
+.filters-panel summary{padding:10px 13px;min-height:40px;font-size:12px}
+#events,.recent-grid{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 60px)/4);grid-template-columns:none;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 0 10px;scrollbar-width:none;align-items:start}
+#events::-webkit-scrollbar,.recent-grid::-webkit-scrollbar{display:none}
+.poster-card{background:transparent!important;border:0!important;border-radius:0!important;overflow:visible;scroll-snap-align:start;padding:0;min-width:0}
+.poster-art,.recent-grid>.poster-card .poster-art{aspect-ratio:145/219;border:1px solid #2b3125;border-radius:17px;overflow:hidden}
+.poster-card .poster-body{padding:9px 0 0}
+.poster-body h3,#events>.poster-card:only-child .poster-body h3,.recent-grid>.poster-card:only-child .poster-body h3{font-size:14px;font-weight:700;letter-spacing:-.3px;line-height:1.4;margin:0 0 3px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.poster-body .poster-meta,.poster-body .poster-availability,.poster-body .poster-price{display:none}
+.poster-body .poster-date-text,#events>.poster-card:only-child .poster-body .poster-date-text{display:block;font-size:12px;line-height:1.7;color:#9ea998;white-space:normal;margin:0}
+.poster-stats{font-size:12px!important;line-height:1.7;color:#aab59f;margin:0!important}
+.poster-stats .confirmed-dot{color:var(--green);font-size:10px}
+#events>.poster-card>.poster-action{display:none}
+.poster-fallback-location{display:none}
+.poster-art.is-typographic{min-height:215px!important;padding:48px 14px 20px}
+.poster-art.is-typographic .poster-type{font-size:26px;overflow-wrap:anywhere;line-height:1.12}
+.poster-art.is-typographic .poster-fallback-location{font-size:13px;display:block;line-height:1.5}
+#events>.poster-card:only-child,.recent-grid>.poster-card:only-child{grid-column:1/-1;width:100%;max-width:100%}
+#events:has(>.poster-card:only-child),.recent-grid:has(>.poster-card:only-child){grid-auto-columns:100%}
+#events>.poster-card:only-child .poster-art.is-typographic,.recent-grid>.poster-card:only-child .poster-art.is-typographic{max-width:100%;min-height:205px!important}
+.mobile-nav{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:18px;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));max-width:460px;width:calc(100% - 36px);margin:auto;z-index:45;background:#23251fef;border:1px solid #373b30;border-radius:50px;backdrop-filter:blur(18px);padding:7px;gap:0;box-shadow:none}
+.mobile-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:55px;border-radius:40px;font-size:10px;color:#a1a598;gap:6px;line-height:1.2;font-weight:400}
+.mobile-nav a>span,.mobile-nav a>[data-mobile-account-label]{font-size:10px;line-height:1.2}
+.mobile-nav svg{width:21px;height:21px;stroke-width:1.5}
+.mobile-nav a[aria-current]{background:#34382f;color:#f5f5f1;font-weight:650}
+.site-footer{border-color:#23291e;margin-top:36px;padding-top:25px}
+#notice:empty{display:none}
+body[data-page="game"] .mobile-nav{display:none}
+@media(min-width:900px){#events:has(>.poster-card:only-child),.recent-grid:has(>.poster-card:only-child){grid-auto-columns:minmax(0,400px)}}
+@media(max-width:650px){
+ main{padding-inline:10px}
+ .site-header{height:72px;min-height:72px;padding:10px}
+ .site-header .brand{font-size:29px;gap:2px}
+ .brand-symbol{width:33px;height:40px}
+ .site-header .brand small{font-size:8px;letter-spacing:2.8px;margin-top:4px}
+ .site-header .publish-link{min-height:39px;padding:10px 15px;font-size:11px}
+ .catalogue-chips{top:72px;padding:8px 10px 13px;min-height:59px}
+ .filter-chip{min-height:37px;font-size:12px;padding:8px 16px}
+ .filter-chip.active{background:transparent}
+ .catalogue-search{padding:45px 0 34px}
+ .catalogue-search h1{font-size:20px;margin-bottom:30px}
+ #events,.recent-grid{grid-auto-columns:42%;gap:16px}
+ .poster-body h3,#events>.poster-card:only-child .poster-body h3,.recent-grid>.poster-card:only-child .poster-body h3{font-size:14px}
+ .poster-body .poster-date-text,#events>.poster-card:only-child .poster-body .poster-date-text{font-size:12px;color:#9ea998}
+ .poster-art.is-typographic .poster-type{font-size:21px}
+ #events>.poster-card:only-child .poster-art.is-typographic .poster-type,.recent-grid>.poster-card:only-child .poster-art.is-typographic .poster-type{font-size:30px}
+ .poster-art.is-typographic .poster-date{font-size:11px}
+ .poster-art.is-typographic .poster-fallback-location{font-size:12px}
+ .game-cover.is-typographic{margin-inline:-10px}
+ body[data-page="game"] .site-header>.brand{font-size:20px}
+ body[data-page="game"] .site-header .brand-symbol{width:23px;height:31px}
+ body[data-page="game"] .site-header .brand small{font-size:6px;letter-spacing:1.6px}
+ body[data-page="game"] .site-header .header-signin{display:flex}
+ body[data-page="login"] .site-header .publish-link,body[data-page="signup"] .site-header .publish-link{display:none}
+}
+@media(min-width:651px) and (max-width:899px){#events,.recent-grid{gap:16px;grid-auto-columns:calc((100% - 48px)/4)}}
+.poster-art:has(img):not(.is-typographic) .poster-type,.poster-art:has(img):not(.is-typographic) .poster-date{display:none}
+@media(min-width:651px){body[data-page="game"] .site-header .header-signin{display:inline-flex}}
+.poster-art.is-typographic{align-items:stretch;text-align:left}
+.poster-art.is-typographic .poster-type{width:100%;text-align:left}
+@media(min-width:651px){
+ #events:has(>.poster-card:only-child),.recent-grid:has(>.poster-card:only-child){grid-template-columns:minmax(0,360px);grid-auto-columns:minmax(0,360px)}
+ #events>.poster-card:only-child,.recent-grid>.poster-card:only-child{grid-column:auto}
+}

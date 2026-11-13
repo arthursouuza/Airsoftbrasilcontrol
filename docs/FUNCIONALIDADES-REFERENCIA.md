@@ -9,12 +9,12 @@ Base visual aprovada pelo usuário em 13/11/2026. A comparação usa a gravaçã
 | Acesso e confirmação | Implementados por e-mail com Supabase. O acesso por telefone/WhatsApp da referência ainda precisa de provedor e configuração próprios; a confirmação por e-mail permanece obrigatória. |
 | Inscrever e cancelar, limite de vagas | Implementados com regras e triggers existentes; nenhuma mudança de banco nesta revisão. |
 | Times | Listagem autenticada existente; não equivale ainda aos perfis e interações completos da referência. |
-| Grupos de combate | Apresentação textual opcional; escolha de grupo, vagas por grupo e integrantes precisam de modelo relacional, regras de acesso e testes de concorrência próprios. |
+| Grupos de combate | Escolha de grupo, gestão pelo organizador e vagas atômicas implementadas nesta branch. Migração 004 preparada, com permissões/concorrência testadas em PostgreSQL isolado; aplicação remota e homologação com duas contas reais pendentes. Lista de inscrições mantém a privacidade existente. |
 | Mais de uma modalidade de ingresso e pagamento on-line | Há um ingresso individual com preço real e pagamento combinado com organizador. Compra, gateway, webhooks, conciliação e estorno ainda não implementados. |
 | Mercado | Ainda não implementado; exige anúncios, mídia, propriedade e moderação. |
 | Avaliações, reputação e perfis detalhados | Ainda não implementados; exigem regras de participação, privacidade e proteção contra avaliações duplicadas. |
 
-O objetivo de equivalência funcional está registrado. Não apresentar essas lacunas como concluídas nem criar controles sem ações reais. Prioridade do próximo módulo foi perguntada ao usuário; enquanto não respondida, não assumir contratação/configuração de provedores nem alterar o banco real.
+O objetivo de equivalência funcional está registrado. Não apresentar essas lacunas como concluídas nem criar controles sem ações reais. O usuário priorizou grupos de combate. Mercado, pagamentos e avaliações continuam fora desta etapa. Não assumir contratação/configuração de provedores nem alterar o banco real sem a aplicação orientada da migração.
 
 ## Pendências anteriores preservadas
 

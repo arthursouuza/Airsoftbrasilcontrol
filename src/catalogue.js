@@ -50,7 +50,9 @@ export function posterCard(event) {
   body.append(node('h3', event.title));
   const location = node('p', undefined, 'poster-meta'); location.append(node('span', '⌖'), document.createTextNode(event.location));
   const caption = dateOnly(event.starts_at) + ' · ' + event.location;
-  body.append(location, node('p', caption, 'poster-date-text'), node('p', available(event), 'poster-availability'), node('p', money(event.price_cents), 'poster-price'));
+  body.append(location, node('p', caption, 'poster-date-text'), node('p', available(event), 'poster-availability'), node('p', money(event.price_cents), 'poster-price'))
+  const stats = node('p', undefined, 'poster-stats');
+  stats.append(node('span', '● ', 'confirmed-dot'), document.createTextNode(`${event.active_registration_count ?? 0} confirmado(s) · ${money(event.price_cents)}`)); body.append(stats);;
   link.append(art, body); card.append(link);
   return card;
 }
@@ -78,7 +80,7 @@ export function renderTeams(teams, session, failed = false) {
   }
   if (!teams.length) container.append(node('p', 'Ainda não há times cadastrados.', 'empty-panel'));
 }
-export function renderGame(event, { session, joined, onRegister, onError }) {
+export function renderGame(event, { session, joined, onRegister, onError, groups = [], groupsFailure = null, ownGroupId = null }) {
   const view = $('game-view'); view.replaceChildren(); view.hidden = false;
   const back = node('a', '← Voltar aos jogos', 'game-breadcrumb'); back.href = 'jogos.html'; view.append(back);
   if (!event) {
@@ -112,7 +114,19 @@ export function renderGame(event, { session, joined, onRegister, onError }) {
     element.append(node('h2', title), node('p', text)); copy.append(element); return element;
   }
   section('about', 'Sobre o jogo', event.description || 'Descrição ainda não informada pelo organizador.');
-  section('groups', 'Grupos de combate', event.groups || 'Grupos ainda não informados pelo organizador.');
+  const groupSection = section('groups', 'Grupos de combate', groupsFailure ? 'Não foi possível carregar os grupos. Atualize a página.' : groups.length ? 'Escolha seu grupo antes de confirmar a inscrição. O limite total de vagas do evento também se aplica.' : event.groups || 'Grupos ainda não informados pelo organizador.');
+  const requestedGroup = new URLSearchParams(window.location.search).get('group');
+  let selectedGroup = groups.some(group => group.id === requestedGroup && group.active_registration_count < group.capacity) ? requestedGroup : null;
+  if (groups.length) {
+    const choices = node('fieldset', undefined, 'combat-group-choices'); choices.append(node('legend', joined ? 'Grupos do evento' : 'Escolha seu grupo'));
+    for (const group of groups) {
+      const label = node('label', undefined, 'combat-group-choice');
+      const radio = node('input'); radio.type = 'radio'; radio.name = 'combat_group'; radio.value = group.id; radio.disabled = joined || group.active_registration_count >= group.capacity; radio.checked = joined ? ownGroupId === group.id : selectedGroup === group.id;
+      radio.addEventListener('change', () => { selectedGroup = group.id; });
+      label.append(radio, node('span', group.name), node('small', `${Math.max(0, group.capacity - group.active_registration_count)} de ${group.capacity} vaga(s)`)); choices.append(label);
+    }
+    groupSection.append(choices);
+  }
   const schedule = section('schedule', 'Horários', event.schedule || 'Horários de início e término informados pelo organizador.');
   const times = node('div', undefined, 'game-time');
   for (const [label, value] of [['Horário de início',event.starts_at],['Horário de término',event.ends_at]]) {
@@ -128,14 +142,17 @@ export function renderGame(event, { session, joined, onRegister, onError }) {
   let pending = false;
   const actions = [];
   function registrationAction() {
-    if (joined) return node('p', 'Inscrição confirmada.', 'registration-state');
+    if (groupsFailure) return node('p', 'Inscrição indisponível até carregar os grupos.', 'registration-state');
+    if (joined) return node('p', 'Inscrição confirmada.' + (ownGroupId ? ' Grupo: ' + (groups.find(group => group.id === ownGroupId)?.name || 'Registrado') + '.' : ''), 'registration-state');
+    if (groups.length && groups.every(group => group.active_registration_count >= group.capacity)) return node('p', 'Todos os grupos estão lotados.', 'registration-state');
     if (event.status !== 'published' || new Date(event.starts_at) <= new Date()) return node('p', 'Inscrições indisponíveis para este jogo.', 'registration-state');
     if (event.capacity != null && event.active_registration_count >= event.capacity) return node('p', 'Lotado.', 'registration-state');
     const label = session ? 'Inscrever-me' : 'Entre para se inscrever';
     const button = node('button', label, 'game-register-action'); button.setAttribute('aria-label', label); actions.push(button);
     button.addEventListener('click', async () => {
+      if (groups.length && !selectedGroup) { onError(new Error('Escolha um grupo de combate antes de se inscrever.')); groupSection.scrollIntoView({ block: 'center' }); groupSection.querySelector('input:not(:disabled)')?.focus(); return; }
       if (pending) return; pending = true; actions.forEach(action => { action.disabled = true; });
-      try { await onRegister(event); } catch (error) { onError(error); }
+      try { await onRegister(event, selectedGroup); } catch (error) { onError(error); }
       finally { pending = false; actions.forEach(action => { action.disabled = false; }); }
     }); return button;
   }

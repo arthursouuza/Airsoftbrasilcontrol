@@ -17,7 +17,7 @@ async function mock(page,options={}){
 }
 test('página inicial lê Supabase, sem importar demonstração local (API simulada)',async({page})=>{
  await page.addInitScript(()=>localStorage.setItem('abc-demo-v1',JSON.stringify({events:[{title:'FICTÍCIO NÃO IMPORTAR'}]})));
- const calls=await mock(page);await page.goto('/');await expect(page.locator('#events h3')).toHaveText('Operação do banco');await expect(page.getByRole('heading',{name:'Começando em breve.'})).toBeVisible();await expect(page.getByRole('heading',{name:'Recém-chegados.'})).toBeVisible();await expect(page.getByRole('heading',{name:'Times.'})).toBeVisible();
+ const calls=await mock(page);await page.goto('/');await expect(page.locator('#events h3')).toHaveText('Operação do banco');await expect(page.getByRole('heading',{name:/^Começando em breve/})).toBeVisible();await expect(page.getByRole('heading',{name:/^Recém-chegados/})).toBeVisible();await expect(page.getByRole('heading',{name:/^Times/})).toBeVisible();
  await expect(page.locator('body')).not.toContainText('FICTÍCIO NÃO IMPORTAR');expect(calls.some(c=>c.url.pathname.endsWith('/events'))).toBe(true);await expect(page.locator('#teams-list')).toContainText('Entre na sua conta');
  await page.locator('#events').getByRole('link',{name:'Ver jogo: Operação do banco'}).click();await expect(page.locator('#game-view h1')).toHaveText('Operação do banco');
 });
@@ -36,8 +36,8 @@ test('identificador inexistente não expõe rascunhos nem cria eventos falsos (A
 });
 for(const width of [320,390,1440])test('catálogo e página do jogo cabem na tela '+width,async({page})=>{
  await mock(page);await page.setViewportSize({width,height:844});await page.goto('/');await expect(page.locator('#events h3')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- if(width<650){await expect(page.getByRole('navigation',{name:'Navegação no celular'})).toBeVisible();await page.getByRole('navigation',{name:'Navegação no celular'}).getByRole('link',{name:'Buscar',exact:true}).click();await expect(page.locator('#event-filters')).toBeVisible();await expect(page.locator('#event-filters input[name=title]')).toBeFocused();}
- else await expect(page.getByRole('navigation',{name:'Navegação no celular'})).toBeHidden();
+ if(width<650){await expect(page.getByRole('navigation',{name:'Navegação flutuante'})).toBeVisible();await page.getByRole('navigation',{name:'Navegação flutuante'}).getByRole('link',{name:'Buscar',exact:true}).click();await expect(page.locator('#event-filters')).toBeVisible();await expect(page.locator('#event-filters input[name=title]')).toBeFocused();}
+ else await expect(page.getByRole('navigation',{name:'Navegação flutuante'})).toBeVisible();
  await page.goto('/game.html?id='+id);await expect(page.locator('#game-view h1')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
@@ -53,7 +53,7 @@ for(const width of [320,390])test('catálogo mobile usa largura total e faixa ho
  await page.setViewportSize({width,height:844});await mock(page);await page.goto('/');await expect(page.locator('#events h3')).toBeVisible();
  const widths=await page.locator('#events').evaluate(el=>({container:el.clientWidth,card:el.querySelector('article').getBoundingClientRect().width}));
  expect(widths.card/widths.container).toBeGreaterThan(.98);
- expect(await page.locator('.publish-link').evaluate(el=>getComputedStyle(el).backgroundColor)).toBe('rgb(36, 211, 80)');
+ expect(await page.locator('.publish-link').evaluate(el=>getComputedStyle(el).backgroundColor)).toBe('rgb(13, 206, 80)');
  await page.unroute(host+'/**');
  await mock(page,{events:[event,{...event,id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',title:'Segundo evento de teste'},{...event,id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',title:'Terceiro evento de teste'}]});
  await page.reload();await expect(page.locator('#events article')).toHaveCount(3);
@@ -73,7 +73,7 @@ test('compartilhar remove parâmetros extras e mantém ingresso mobile acessíve
  await mock(page);await page.goto('/game.html?id='+id+'&extra=nao-compartilhar#privado');
  await page.getByRole('button',{name:'Compartilhar jogo'}).click();
  await expect.poll(()=>page.evaluate(()=>window.copiedGameUrl)).toBe('http://127.0.0.1:8000/game.html?id='+id);
- await expect(page.getByRole('navigation',{name:'Navegação no celular'})).toBeHidden();
+ await expect(page.getByRole('navigation',{name:'Navegação flutuante'})).toBeHidden();
  await page.locator('#game-tickets').getByRole('button',{name:'Entre para se inscrever'}).click();
  await expect(page).toHaveURL(/login.html\?next=game/);await expect(page.locator('#auth-form input[name=email]')).toBeVisible();
 });
@@ -86,7 +86,7 @@ for(const width of [390,1440])test('páginas separam catálogo, login, cadastro 
  await page.locator('[data-mobile="account"]').evaluate(el=>el.click());await expect(page).toHaveURL(/login.html$/);
  await expect(page.getByRole('heading',{name:'Entrar',exact:true})).toBeVisible();await expect(page.getByLabel('Nome de jogador')).toHaveCount(0);await expect(page.locator('#catalogue-home,#event-form')).toHaveCount(0);
  await page.getByRole('link',{name:'Criar uma conta',exact:true}).click();await expect(page).toHaveURL(/cadastro.html$/);await expect(page.getByLabel('Nome de jogador')).toBeVisible();await expect(page.locator('input[name=password]')).toHaveAttribute('autocomplete','new-password');await expect(page.getByRole('button',{name:'Entrar',exact:true})).toHaveCount(0);
- await page.goto('/jogos.html');await expect(page.locator('#events h3')).toBeVisible();await expect(page.getByRole('heading',{name:/Todos os jogos/})).toBeVisible();if(width<650){await expect(page.locator('#event-filters')).toBeHidden();await page.locator('#filters-panel summary').click();}await expect(page.locator('#event-filters')).toBeVisible();await expect(page.locator('#auth-form,#event-form,.hero,#new-arrivals')).toHaveCount(0);
+ await page.goto('/jogos.html');await expect(page.locator('#events h3')).toBeVisible();await expect(page.getByRole('heading',{name:'Encontre seu próximo jogo'})).toBeVisible();await expect(page.locator('#event-filters')).toBeHidden();await page.locator('#filters-panel summary').click();await expect(page.locator('#event-filters')).toBeVisible();await expect(page.locator('#auth-form,#event-form,.hero,#new-arrivals')).toHaveCount(0);
  await page.goto('/connected.html');await expect(page.locator('#account-guest')).toBeVisible();await expect(page.locator('#account')).toBeHidden();await expect(page.locator('#catalogue-home,#auth-form')).toHaveCount(0);
  await page.goto('/game.html?id='+id);await expect(page.locator('#game-view h1')).toBeVisible();await expect(page.locator('#catalogue-home,#auth-form,#event-form')).toHaveCount(0);expect(errors).toEqual([]);
 });

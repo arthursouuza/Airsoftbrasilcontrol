@@ -1,17 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_KEY, emailRedirectUrl } from './config.js';
 import { dateTime, posterCard, renderRecents, renderTeams, renderGame, metadataEditor } from './catalogue.js';
+import { groupManager } from './combat-groups.js';
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 let session = null;
 let generation = 0;
+let combatGroups = [];
+let groupsReady = false;
+let groupsFailure = null;
 const page = document.body.dataset.page;
 const gamePage = page === 'game';
 const cataloguePage = ['home', 'catalogue'].includes(page);
 const authPage = ['login', 'signup'].includes(page);
-function loginUrl() {
+function loginUrl(combatGroupId = null) {
   const url = new URL('login.html', location.href);
-  if (gamePage) url.searchParams.set('next', 'game.html?id=' + gameId);
+  if (gamePage) url.searchParams.set('next', 'game.html?id=' + gameId + (combatGroupId ? '&group=' + encodeURIComponent(combatGroupId) : ''));
   return url.pathname + url.search;
 }
 function signedInDestination() {
@@ -27,11 +31,16 @@ if (gamePage) {
   $('game-view').hidden = false;
   $('game-view').textContent = 'Carregando jogo…';
 }
-let filters = { title: '', location: '', date: '' };
-if ($('filters-panel')) $('filters-panel').open = !window.matchMedia('(max-width:650px)').matches;
+let filters = { title: '', location: '', date: '', search: '' };
+if ($('filters-panel')) $('filters-panel').open = false;
 const literalPattern = text => '%' + text.replace(/[\\%_]/g, '\\$&') + '%';
 function publicEventsQuery() {
   let query = db.from('events').select('*').eq('status', 'published').gt('starts_at', new Date().toISOString()).order('starts_at');
+  if (filters.search) {
+    // PostgREST quoted values prevent commas/quotes becoming filter syntax.
+    const quoted = '"' + literalPattern(filters.search).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+    query = query.or(`title.ilike.${quoted},location.ilike.${quoted}`);
+  }
   if (filters.title) query = query.ilike('title', literalPattern(filters.title));
   if (filters.location) query = query.ilike('location', literalPattern(filters.location));
   if (filters.date) {
@@ -47,8 +56,10 @@ function notice(message, error = false) {
 }
 function check(result) { if (result.error) throw result.error; return result.data; }
 function errorMessage(error) {
+  if (error.code === 'P1001') return 'Escolha um grupo de combate antes de se inscrever.';
+  if (error.code === 'P1002') return 'O grupo está lotado ou indisponível. Atualize e escolha outro grupo.';
   if (error.code === 'P0001') return 'O evento está indisponível ou não há mais vagas. Atualize o catálogo.';
-  if (error.code === '23514') return 'A operação não atende às regras do evento. A capacidade não pode ser menor que o número de inscrições ativas.';
+  if (error.code === '23514') return 'A operação não atende às regras do evento. A capacidade do evento ou grupo não pode ser menor que o número de inscrições ativas.';
   if (error.code === 'over_email_send_rate_limit') return 'O limite de envio de e-mails do Supabase foi atingido. Aguarde a liberação do serviço e tente novamente.';
   if (error.code === '23505') return 'Você já está inscrito neste evento.';
   if (error.code === '42501') return 'Sua conta não tem permissão para esta ação. Confira se entrou corretamente.';
@@ -84,12 +95,18 @@ async function cancelRegistration(id) {
   notice('Inscrição cancelada. O banco libera a vaga somente no primeiro cancelamento.');
   await load();
 }
-async function registerForEvent(event) {
+async function registerForEvent(event, combatGroupId = null) {
+  if (groupsFailure) throw new Error('Não foi possível conferir os grupos. Atualize a página antes de se inscrever.');
+  const groups = combatGroups.filter(group => group.event_id === event.id);
+  if (groups.length && !gamePage) { location.assign('game.html?id=' + encodeURIComponent(event.id)); return; }
   if (!session) {
-    window.location.assign(loginUrl());
+    window.location.assign(loginUrl(combatGroupId));
     return;
   }
-  check(await db.from('registrations').insert({ event_id: event.id, player_id: session.user.id }));
+  if (groups.length && !combatGroupId) throw new Error('Escolha um grupo de combate antes de se inscrever.');
+  const registration = { event_id: event.id, player_id: session.user.id };
+  if (combatGroupId) registration.combat_group_id = combatGroupId;
+  check(await db.from('registrations').insert(registration));
   notice('Inscrição realizada. Combine o pagamento com o organizador.');
   await load();
 }
@@ -97,14 +114,20 @@ async function load() {
   if (authPage) return;
   const current = ++generation;
   const user = session?.user;
-  const [events, mine, registrations, teams, detail] = await Promise.all([
+  const [events, mine, registrations, teams, detail, groupResult] = await Promise.all([
     publicEventsQuery(),
     user ? db.from('events').select('*').eq('organizer_id', user.id).order('starts_at') : { data: [] },
-    user ? db.from('registrations').select('id,event_id,status,events(title,starts_at,status)').eq('player_id', user.id) : { data: [] },
+    user ? db.from('registrations').select('*,events(title,starts_at,status)').eq('player_id', user.id) : { data: [] },
     user ? db.from('teams').select('id,name,description').order('created_at', { ascending: false }).limit(12) : { data: [] },
-    gamePage && validGameId ? db.from('events').select('*').eq('id', gameId).limit(1) : { data: [] }
+    gamePage && validGameId ? db.from('events').select('*').eq('id', gameId).limit(1) : { data: [] },
+    db.from('event_combat_groups').select('*').order('created_at')
   ]);
   if (current !== generation) return;
+  groupsReady = !groupResult.error;
+  const missingGroups = ['42P01', 'PGRST205'].includes(groupResult.error?.code);
+  groupsFailure = groupResult.error && !missingGroups ? groupResult.error : null;
+  combatGroups = groupsReady ? groupResult.data || [] : [];
+  if (groupsFailure) notice('Não foi possível carregar os grupos. Atualize antes de se inscrever.', true);
   const publicEvents = check(events), myEvents = check(mine), myRegistrations = check(registrations);
   const joined = new Set(myRegistrations.filter(r => r.status !== 'cancelled').map(r => r.event_id));
   if (cataloguePage) $('show-more-games').hidden = publicEvents.length < 2;
@@ -113,7 +136,7 @@ async function load() {
     renderTeams(teams.data || [], session, !!teams.error);
   }
   if (gamePage) renderGame(detail.data?.[0], {
-    session, joined: joined.has(gameId), onRegister: registerForEvent,
+    session, joined: joined.has(gameId), ownGroupId: myRegistrations.find(row => row.event_id === gameId && row.status !== 'cancelled')?.combat_group_id, groups: combatGroups.filter(group => group.event_id === gameId), groupsFailure, onRegister: registerForEvent,
     onError: error => notice(errorMessage(error), true)
   });
   if (gamePage && detail.error) notice('Não foi possível carregar o jogo. Confira sua conexão e atualize a página.', true);
@@ -123,10 +146,6 @@ async function load() {
     const element = posterCard(e);
     if (joined.has(e.id)) element.append(paragraph('Inscrição confirmada.'));
     else if (e.capacity != null && e.active_registration_count >= e.capacity) element.append(paragraph('Lotado.'));
-    else {
-      const signup = button(user ? 'Inscrever-me' : 'Entre para se inscrever', () => registerForEvent(e));
-      signup.classList.add('poster-action'); element.append(signup);
-    }
     $('events').append(element);
   }
   const filtered = Object.values(filters).some(Boolean);
@@ -145,8 +164,13 @@ async function load() {
       notice('Apresentação atualizada.'); await load();
     }, error => notice(errorMessage(error), true));
     if (presentation) element.append(presentation);
+    if (groupsReady) element.append(groupManager(e, combatGroups.filter(group => group.event_id === e.id), async group => {
+      check(await db.rpc('save_combat_group', { p_event_id: e.id, p_name: group.name, p_capacity: group.capacity, p_group_id: group.id }));
+      notice('Grupo salvo. O limite total do evento continua valendo.'); await load();
+    }, error => notice(errorMessage(error), true)));
+    else element.append(paragraph(groupsFailure ? 'Grupos indisponíveis. Atualize a página.' : 'Grupos de combate: aplique a migração 004 no Supabase para habilitar.'));
     element.append(paragraph(`${e.active_registration_count ?? 0} inscrição(ões) ativa(s).`));
-    const capacityForm = document.createElement('form');
+    const capacityForm = document.createElement('form'); capacityForm.className = 'event-capacity-form';
     const capacityLabel = document.createElement('label'); capacityLabel.textContent = 'Capacidade de vagas';
     const capacityInput = document.createElement('input');
     capacityInput.type = 'number'; capacityInput.min = String(Math.max(1, e.active_registration_count ?? 0));
@@ -165,11 +189,11 @@ async function load() {
     element.append(capacityForm);
     const participants = document.createElement('div');
     element.append(button('Ver inscrições ativas', async () => {
-      const rows = check(await db.from('registrations').select('id,created_at').eq('event_id', e.id).eq('status', 'active').order('created_at'));
+      const rows = check(await db.from('registrations').select('*').eq('event_id', e.id).eq('status', 'active').order('created_at'));
       participants.replaceChildren();
       for (const r of rows) {
         const item = document.createElement('div');
-        item.append(paragraph(`Inscrição ${r.id.slice(0, 8)} · ${dateTime(r.created_at)}`),
+        item.append(paragraph(`Inscrição ${r.id.slice(0, 8)} · ${dateTime(r.created_at)} · ${combatGroups.find(group => group.id === r.combat_group_id)?.name || 'Sem grupo (inscrição original)'}`),
           button(`Cancelar inscrição ${r.id.slice(0, 8)}`, () => cancelRegistration(r.id)));
         participants.append(item);
       }
@@ -191,6 +215,8 @@ async function load() {
     const element = document.createElement('article'); element.className = 'card';
     element.append(paragraph(r.events ? `${r.events.title} · ${dateTime(r.events.starts_at)}`
       : 'Inscrição registrada. Este evento não está disponível no catálogo.'));
+    if (r.combat_group_id) element.append(paragraph('Grupo: ' + (combatGroups.find(group => group.id === r.combat_group_id)?.name || 'Grupo registrado')));
+    else element.append(paragraph('Sem grupo (inscrição original ou evento sem grupos).'));
     element.append(paragraph(r.status === 'cancelled' ? 'Inscrição cancelada.' : 'Inscrição ativa.'));
     if (r.status !== 'cancelled') element.append(button('Cancelar minha inscrição', () => cancelRegistration(r.id)));
     $('my-registrations').append(element);
@@ -208,7 +234,7 @@ async function syncSession(next) {
     link.href = session ? 'connected.html' : loginUrl();
   });
   document.querySelectorAll('[data-account-label]').forEach(label => { label.textContent = session ? 'Minha conta' : 'Entrar'; });
-  document.querySelectorAll('[data-mobile-account-label]').forEach(label => { label.textContent = session ? 'Conta' : 'Entrar'; });
+  document.querySelectorAll('[data-mobile-account-label]').forEach(label => { label.textContent = 'Perfil'; });
   document.querySelectorAll('[data-registration-link]').forEach(link => { link.href = session ? 'connected.html#my-registrations' : loginUrl(); });
   if ($('profile-warning')) $('profile-warning').textContent = '';
   if (session) {
@@ -287,13 +313,13 @@ $('event-filters')?.addEventListener('submit', event => {
       const parsed = new Date(date + 'T12:00:00');
       if (parsed.getFullYear() !== Number(match[3]) || parsed.getMonth() + 1 !== Number(match[2]) || parsed.getDate() !== Number(match[1])) throw new Error('Informe uma data válida no formato dd/mm/aaaa.');
     }
-    filters = { title: values.get('title').trim(), location: values.get('location').trim(), date };
+    filters = { ...filters, title: values.get('title').trim(), location: values.get('location').trim(), date };
     await load();
   });
 });
 $('clear-filters')?.addEventListener('click', () => {
   action($('clear-filters'), async () => {
-    $('event-filters').reset(); filters = { title: '', location: '', date: '' };
+    $('event-filters').reset(); $('quick-search-form')?.reset(); clearTimeout(quickSearchTimer); filters = { title: '', location: '', date: '', search: '' };
     await load();
   });
 });
@@ -332,3 +358,11 @@ if (page === 'home' && ['#account','#my-registrations'].includes(location.hash))
 if (page === 'home' && location.hash === '#catalogue') openSearch();
 
 if (authPage) document.querySelectorAll('.auth-switch a').forEach(link => { if (['login.html','cadastro.html'].some(name => link.getAttribute('href') === name)) { const target = new URL(link.href); target.search = location.search; link.href = target.href; } });
+
+let quickSearchTimer;
+function applyQuickSearch() {
+  clearTimeout(quickSearchTimer);
+  action(null, async () => { filters.search = $('quick-search').value.trim(); await load(); });
+}
+$('quick-search-form')?.addEventListener('submit', event => { event.preventDefault(); applyQuickSearch(); });
+$('quick-search')?.addEventListener('input', () => { clearTimeout(quickSearchTimer); quickSearchTimer = setTimeout(applyQuickSearch, 300); });

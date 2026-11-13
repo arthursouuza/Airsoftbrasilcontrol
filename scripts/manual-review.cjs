@@ -44,8 +44,9 @@ async function runSignedInReview(page) {
     const publicCard = page.locator('#events article').filter({ hasText: title });
     await expect(publicCard).toBeVisible();
     console.log('PASS criação e publicação do evento exclusivo de teste');
-    await publicCard.getByRole('button', { name: 'Inscrever-me', exact: true }).click();
-    await expect(publicCard).toContainText('Inscrição confirmada.');
+    await publicCard.locator('.poster-link').click();
+    await page.locator('#game-tickets').getByRole('button', { name: 'Inscrever-me', exact: true }).click();
+    await expect(page.locator('#game-tickets')).toContainText('Inscrição confirmada.');
     await page.goto(new URL('connected.html', page.url()).href);
     await expect(registered).toContainText('Inscrição ativa.');
     console.log('PASS inscrição no evento de teste');
