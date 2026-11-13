@@ -1,4 +1,4 @@
-const {test,expect}=require('@playwright/test');
+const {test,expect}=require('./offline-fixture.cjs');
 const host='https://nzgpceglyxwtukrbdkam.supabase.co';
 const user={id:'11111111-1111-4111-8111-111111111111',email:'player@example.test',aud:'authenticated',role:'authenticated',user_metadata:{display_name:'Jogador teste'}};
 const token=()=>({access_token:'test-access-token',token_type:'bearer',expires_in:3600,refresh_token:'test-refresh-token',user});
@@ -31,6 +31,7 @@ test('cadastro com confirmação, login, evento, inscrição, sessão persistent
  await page.getByRole('link',{name:'Já tenho conta. Entrar'}).click();await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('Temporary-test-password!');await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page.locator('#account')).toBeVisible();
  await page.getByText('Criar evento',{exact:true}).click();await page.getByLabel('Título',{exact:true}).fill('Operação teste');await page.getByLabel('Descrição',{exact:true}).fill('<img src=x onerror=alert(1)>');await page.getByLabel('Local',{exact:true}).fill('Campo teste');
  await page.getByLabel('Início',{exact:true}).fill('2030-12-01T09:00');await page.getByLabel('Fim',{exact:true}).fill('2030-12-01T12:00');await page.getByLabel('Visibilidade').selectOption('published');
+ await page.getByLabel('Capacidade de vagas',{exact:true}).fill('20');
  await page.getByRole('button',{name:'Salvar evento',exact:true}).click();await expect(page.locator('#my-events h3')).toHaveText('Operação teste');await page.goto('/index.html');await expect(page.locator('#events h3')).toHaveText('Operação teste');expect(state.events).toHaveLength(1);expect(await page.locator('#events img').count()).toBe(0);
  await page.locator('#events .poster-link').click();await page.locator('#game-tickets').getByRole('button',{name:'Inscrever-me',exact:true}).click();await expect(page.locator('#game-tickets')).toContainText('Inscrição confirmada.');expect(state.registrations).toHaveLength(1);await page.goto('/connected.html');await expect(page.locator('#my-registrations')).toContainText('Operação teste');
  await page.reload();await expect(page.locator('#account')).toBeVisible();await expect(page.locator('#my-registrations')).toContainText('Inscrição ativa');

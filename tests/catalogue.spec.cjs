@@ -1,4 +1,4 @@
-const {test,expect}=require('@playwright/test');
+const {test,expect}=require('./offline-fixture.cjs');
 const host='https://nzgpceglyxwtukrbdkam.supabase.co';
 const id='11111111-2222-4333-8444-555555555555';
 const event={id,title:'Operação do banco',location:'Campo cadastrado',description:'Descrição cadastrada <script>alert(1)</script>',starts_at:'2030-12-01T09:00:00Z',ends_at:'2030-12-01T13:00:00Z',created_at:'2026-11-01T00:00:00Z',status:'published',price_cents:5000,capacity:100,active_registration_count:1};

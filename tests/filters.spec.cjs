@@ -1,4 +1,4 @@
-const {test,expect}=require('@playwright/test');
+const {test,expect}=require('./offline-fixture.cjs');
 const host='https://nzgpceglyxwtukrbdkam.supabase.co';
 const fixtures=[
  {id:'a',title:'Operação Horizonte',location:'Campo Sul, Curitiba',starts_at:'2030-12-02T02:59:59Z'},

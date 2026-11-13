@@ -1,4 +1,4 @@
-const {test,expect}=require('@playwright/test');
+const {test,expect}=require('./offline-fixture.cjs');
 const host='https://nzgpceglyxwtukrbdkam.supabase.co';
 const user={id:'11111111-1111-4111-8111-111111111111',aud:'authenticated',email:'teste@example.test',email_confirmed_at:'2026-01-01T00:00:00Z',user_metadata:{}};
 function token(){return [Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url'),Buffer.from(JSON.stringify({sub:user.id,exp:Math.floor(Date.now()/1000)+3600,aud:'authenticated'})).toString('base64url'),'test-signature'].join('.');}

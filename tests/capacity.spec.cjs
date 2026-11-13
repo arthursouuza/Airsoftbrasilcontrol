@@ -1,4 +1,4 @@
-const {test,expect}=require('@playwright/test');
+const {test,expect}=require('./offline-fixture.cjs');
 const host='https://nzgpceglyxwtukrbdkam.supabase.co';
 const user={id:'11111111-1111-4111-8111-111111111111',email:'test@example.test',aud:'authenticated',role:'authenticated',user_metadata:{display_name:'Teste'}};
 async function setup(page,full=false){

@@ -1,4 +1,4 @@
-const {test,expect}=require('@playwright/test');
+const {test,expect}=require('./offline-fixture.cjs');
 const fs=require('fs');const {transformSync}=require('esbuild');
 const mod={exports:{}};new Function('module','exports',transformSync(fs.readFileSync('src/config.js','utf8'),{format:'cjs'}).code)(mod,mod.exports);const config=mod.exports;
 test('retorno mantém o caminho do GitHub Pages e isola o endereço local',()=>{
