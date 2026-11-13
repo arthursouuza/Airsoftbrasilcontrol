@@ -209,3 +209,16 @@ button:hover,.button:hover{background:#3ce565}
 @media(max-width:650px){.filters-panel:not([open]){display:none}#events>.poster-card>.poster-action{display:none}}
 
 @media(max-width:650px){.mobile-nav a>[data-mobile-account-label]{font-size:inherit;line-height:inherit}}
+
+/* Acesso e gestão em páginas próprias: catálogo e jogo não empilham formulários. */
+body[data-page="login"] .account-area,body[data-page="signup"] .account-area{max-width:520px;margin:55px auto}
+.auth-switch{text-align:center;font-size:14px;margin:22px 0;color:var(--muted)}
+.auth-switch a{color:var(--green)}
+body[data-page="account"] .account-area{margin:40px auto}
+body[data-page="account"] #account>h2{margin-top:30px}
+@media(max-width:650px){
+ body[data-page="login"] .publish-link,body[data-page="signup"] .publish-link{display:none}
+ body[data-page="login"] .header-signin,body[data-page="signup"] .header-signin{display:none}
+ body[data-page="login"] .account-area,body[data-page="signup"] .account-area{margin:28px auto}
+ body[data-page="account"] .account-area{margin:22px auto}
+}

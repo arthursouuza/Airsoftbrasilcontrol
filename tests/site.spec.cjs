@@ -25,21 +25,21 @@ async function setup(page){
 }
 test('cadastro com confirmação, login, evento, inscrição, sessão persistente e logout (API simulada)',async({page})=>{
  const state=await setup(page);const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto('/connected.html');await expect(page.getByText('Ainda não há próximos eventos publicados.')).toBeVisible();
+ await page.goto('/index.html');await expect(page.getByText('Ainda não há próximos eventos publicados.')).toBeVisible();await page.goto('/cadastro.html');
  await page.getByLabel('Nome de jogador').fill('Jogador teste');await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('Temporary-test-password!');
  await page.getByRole('button',{name:'Criar conta',exact:true}).click();await expect(page.getByRole('status').first()).toContainText('Confira seu e-mail');
- await page.getByLabel('Senha',{exact:true}).fill('Temporary-test-password!');await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page.locator('#account')).toBeVisible();
+ await page.getByRole('link',{name:'Já tenho conta. Entrar'}).click();await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('Temporary-test-password!');await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page.locator('#account')).toBeVisible();
  await page.getByText('Criar evento',{exact:true}).click();await page.getByLabel('Título',{exact:true}).fill('Operação teste');await page.getByLabel('Descrição',{exact:true}).fill('<img src=x onerror=alert(1)>');await page.getByLabel('Local',{exact:true}).fill('Campo teste');
  await page.getByLabel('Início',{exact:true}).fill('2030-12-01T09:00');await page.getByLabel('Fim',{exact:true}).fill('2030-12-01T12:00');await page.getByLabel('Visibilidade').selectOption('published');
- await page.getByRole('button',{name:'Salvar evento',exact:true}).click();await expect(page.locator('#events h3')).toHaveText('Operação teste');expect(state.events).toHaveLength(1);expect(await page.locator('#events img').count()).toBe(0);
- await page.getByRole('button',{name:'Inscrever-me',exact:true}).click();await expect(page.getByText('Inscrição confirmada.',{exact:true})).toBeVisible();expect(state.registrations).toHaveLength(1);await expect(page.locator('#my-registrations')).toContainText('Operação teste');
- await page.reload();await expect(page.locator('#account')).toBeVisible();await expect(page.getByText('Inscrição confirmada.',{exact:true})).toBeVisible();
- await page.getByRole('button',{name:'Sair',exact:true}).click();await expect(page.locator('#auth')).toBeVisible();await expect(page.locator('#account')).toBeHidden();expect(errors).toEqual([]);
+ await page.getByRole('button',{name:'Salvar evento',exact:true}).click();await expect(page.locator('#my-events h3')).toHaveText('Operação teste');await page.goto('/index.html');await expect(page.locator('#events h3')).toHaveText('Operação teste');expect(state.events).toHaveLength(1);expect(await page.locator('#events img').count()).toBe(0);
+ await page.getByRole('button',{name:'Inscrever-me',exact:true}).click();await expect(page.getByText('Inscrição confirmada.',{exact:true})).toBeVisible();expect(state.registrations).toHaveLength(1);await page.goto('/connected.html');await expect(page.locator('#my-registrations')).toContainText('Operação teste');
+ await page.reload();await expect(page.locator('#account')).toBeVisible();await expect(page.locator('#my-registrations')).toContainText('Inscrição ativa');
+ await page.getByRole('button',{name:'Sair',exact:true}).click();await expect(page.locator('#account-guest')).toBeVisible();await expect(page.locator('#account')).toBeHidden();expect(errors).toEqual([]);
 });
 test('credenciais inválidas mantêm o usuário fora da conta (API simulada)',async({page})=>{
  await setup(page);await page.route(host+'/auth/v1/token**',r=>r.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error_code:'invalid_credentials',msg:'Invalid login credentials'})}));
- await page.goto('/connected.html');await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('Wrong-password!');await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page.locator('#notice')).toHaveText('E-mail ou senha incorretos.');await expect(page.locator('#account')).toBeHidden();
+ await page.goto('/login.html');await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('Wrong-password!');await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page.locator('#notice')).toHaveText('E-mail ou senha incorretos.');await expect(page.locator('#account')).toBeHidden();
 });
 test('layout móvel permite cadastro sem rolagem horizontal',async({page})=>{
- await setup(page);await page.setViewportSize({width:375,height:812});await page.goto('/connected.html');await expect(page.getByRole('button',{name:'Criar conta',exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+ await setup(page);await page.setViewportSize({width:375,height:812});await page.goto('/cadastro.html');await expect(page.getByRole('button',{name:'Criar conta',exact:true})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });

@@ -27,19 +27,19 @@ async function setup(page,full=false){
   await route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
  });return {event,registrations,patches};
 }
-async function login(page){await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('Somente-mock-123!');await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page.locator('#account')).toBeVisible();}
+async function login(page){await page.goto('/login.html');await page.getByLabel('E-mail',{exact:true}).fill(user.email);await page.getByLabel('Senha',{exact:true}).fill('Somente-mock-123!');await page.getByRole('button',{name:'Entrar',exact:true}).click();await expect(page.locator('#account')).toBeVisible();}
 test('inscrição, cancelamento e reinscrição preservam histórico e liberam vaga (API simulada)',async({page})=>{
- const state=await setup(page);page.on('dialog',d=>d.accept());await page.goto('/connected.html');await login(page);
+ const state=await setup(page);page.on('dialog',d=>d.accept());await page.goto('/connected.html');await login(page);await page.goto('/index.html');
  await page.locator('#events').getByRole('button',{name:'Inscrever-me',exact:true}).click();await expect(page.locator('#events')).toContainText('Inscrição confirmada');
- await page.locator('#my-registrations').getByRole('button',{name:'Cancelar minha inscrição'}).click();await expect(page.locator('#my-registrations')).toContainText('Inscrição cancelada');await expect(page.locator('#events')).toContainText('1 vaga(s)');expect(state.event.active_registration_count).toBe(0);expect(state.patches[0].query).toContain('status=eq.active');
- await page.locator('#events').getByRole('button',{name:'Inscrever-me',exact:true}).click();await expect(page.locator('#my-registrations')).toContainText('Inscrição ativa');expect(state.registrations).toHaveLength(2);expect(state.registrations[0].status).toBe('cancelled');expect(state.event.active_registration_count).toBe(1);
- await page.locator('#my-events').getByRole('button',{name:'Ver inscrições ativas'}).click();await page.locator('#my-events').getByRole('button',{name:/Cancelar inscrição registra/}).click();await expect(page.locator('#events')).toContainText('1 vaga(s)');
+ await page.goto('/connected.html');await page.locator('#my-registrations').getByRole('button',{name:'Cancelar minha inscrição'}).click();await expect(page.locator('#my-registrations')).toContainText('Inscrição cancelada');await page.goto('/index.html');await expect(page.locator('#events')).toContainText('1 vaga(s)');expect(state.event.active_registration_count).toBe(0);expect(state.patches[0].query).toContain('status=eq.active');
+ await page.locator('#events').getByRole('button',{name:'Inscrever-me',exact:true}).click();await page.goto('/connected.html');await expect(page.locator('#my-registrations')).toContainText('Inscrição ativa');expect(state.registrations).toHaveLength(2);expect(state.registrations[0].status).toBe('cancelled');expect(state.event.active_registration_count).toBe(1);
+ await page.locator('#my-events').getByRole('button',{name:'Ver inscrições ativas'}).click();await page.locator('#my-events').getByRole('button',{name:/Cancelar inscrição registra/}).click();await page.goto('/index.html');await expect(page.locator('#events')).toContainText('1 vaga(s)');
 });
 test('lotação e erro de redução de capacidade são exibidos (API simulada)',async({page})=>{
- const state=await setup(page,true);await page.goto('/connected.html');await expect(page.locator('#events')).toContainText('Lotado.');await expect(page.locator('#events').getByRole('button',{name:'Inscrever-me',exact:true})).toHaveCount(0);
+ const state=await setup(page,true);await page.goto('/index.html');await expect(page.locator('#events')).toContainText('Lotado.');await expect(page.locator('#events').getByRole('button',{name:'Inscrever-me',exact:true})).toHaveCount(0);
  await login(page);const input=page.locator('#my-events').getByLabel('Capacidade de vagas');await expect(input).toHaveAttribute('min','1');
  await page.locator('#my-events form').evaluate(f=>f.noValidate=true);await input.fill('0');await page.getByRole('button',{name:'Atualizar capacidade'}).click();await expect(page.locator('#notice')).toContainText('capacidade não pode ser menor');expect(state.event.capacity).toBe(1);
- await input.fill('2');await page.getByRole('button',{name:'Atualizar capacidade'}).click();await expect(page.locator('#notice')).toHaveText('Capacidade atualizada.');await expect(page.locator('#events')).toContainText('1 vaga(s) disponível(is) de 2');
+ await input.fill('2');await page.getByRole('button',{name:'Atualizar capacidade'}).click();await expect(page.locator('#notice')).toHaveText('Capacidade atualizada.');await page.goto('/index.html');await expect(page.locator('#events')).toContainText('1 vaga(s) disponível(is) de 2');
 });
 
 test('roteiro de revisão com login manual não precisa ler senha ou token (API simulada)',async({page})=>{

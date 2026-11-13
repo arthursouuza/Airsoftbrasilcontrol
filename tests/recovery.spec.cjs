@@ -21,7 +21,7 @@ test('solicitação usa e-mail e callback permitido sem precisar da senha (API s
   const req=route.request(),url=new URL(req.url());if(url.pathname.endsWith('/recover'))calls.push({url,body:req.postDataJSON()});
   await route.fulfill({status:200,contentType:'application/json',body:url.pathname.endsWith('/events')?'[]':'{}'});
  });
- await page.goto('/connected.html#forgot-password');await expect(page.locator('#recovery-form')).toBeVisible();
+ await page.goto('/login.html#forgot-password');await expect(page.locator('#recovery-form')).toBeVisible();
  await page.getByLabel('E-mail para recuperar a senha').fill(user.email);await page.getByRole('button',{name:'Enviar link de recuperação'}).click();
  await expect(page.locator('#notice')).toContainText('Se houver uma conta');expect(calls).toHaveLength(1);expect(calls[0].body.email).toBe(user.email);expect(calls[0].body.password).toBeUndefined();expect(calls[0].url.searchParams.get('redirect_to')).toBe('http://127.0.0.1:8000/auth-callback.html');
 });
@@ -42,7 +42,7 @@ test('limite de e-mails informa bloqueio sem afirmar envio (API simulada)',async
   if(url.pathname.endsWith('/recover'))await route.fulfill({status:429,contentType:'application/json',body:JSON.stringify({error_code:'over_email_send_rate_limit',msg:'email rate limit exceeded'})});
   else await route.fulfill({status:200,contentType:'application/json',body:'[]'});
  });
- await page.goto('/connected.html#forgot-password');await page.getByLabel('E-mail para recuperar a senha').fill(user.email);await page.getByRole('button',{name:'Enviar link de recuperação'}).click();await expect(page.locator('#notice')).toContainText('limite de envio de e-mails');await expect(page.locator('#notice')).not.toContainText('você receberá');
+ await page.goto('/login.html#forgot-password');await page.getByLabel('E-mail para recuperar a senha').fill(user.email);await page.getByRole('button',{name:'Enviar link de recuperação'}).click();await expect(page.locator('#notice')).toContainText('limite de envio de e-mails');await expect(page.locator('#notice')).not.toContainText('você receberá');
 });
 test('sessão inválida e link sem credenciais não oferecem alteração de senha',async({page})=>{
  const calls=await recovery(page,{invalidSession:true});await expect(page.getByRole('status')).toContainText('Este link expirou');await expect(page.locator('#new-password-form')).toBeHidden();expect(calls.filter(c=>c.method==='PUT')).toHaveLength(0);

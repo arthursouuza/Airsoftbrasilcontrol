@@ -37,6 +37,7 @@ async function runSignedInReview(page) {
     await expect(ownCard).toBeVisible();
     await ownCard.getByRole('button', { name: 'Publicar no catálogo', exact: true }).click();
     // Isola o evento de teste sem selecionar ou alterar eventos preexistentes.
+    await page.goto(new URL('index.html', page.url()).href);
     await page.locator('#filters-panel').evaluate(panel => { panel.open = true; });
     await page.getByLabel('Nome do evento', { exact: true }).fill(title);
     await page.getByRole('button', { name: 'Filtrar eventos', exact: true }).click();
@@ -45,14 +46,16 @@ async function runSignedInReview(page) {
     console.log('PASS criação e publicação do evento exclusivo de teste');
     await publicCard.getByRole('button', { name: 'Inscrever-me', exact: true }).click();
     await expect(publicCard).toContainText('Inscrição confirmada.');
+    await page.goto(new URL('connected.html', page.url()).href);
     await expect(registered).toContainText('Inscrição ativa.');
     console.log('PASS inscrição no evento de teste');
     await registered.getByRole('button', { name: 'Cancelar minha inscrição', exact: true }).click();
     await expect(registered).toContainText('Inscrição cancelada.');
-    await expect(publicCard).toContainText('1 vaga(s) disponível(is) de 1');
+    await expect(ownCard).toContainText('1 vaga(s) disponível(is) de 1');
     console.log('PASS cancelamento e liberação da vaga');
   } finally {
     if (created) {
+      if (!new URL(page.url()).pathname.endsWith('/connected.html')) await page.goto(new URL('connected.html', page.url()).href);
       const cancelMine = registered.getByRole('button', { name: 'Cancelar minha inscrição', exact: true });
       if (await cancelMine.count()) {
         await cancelMine.click();

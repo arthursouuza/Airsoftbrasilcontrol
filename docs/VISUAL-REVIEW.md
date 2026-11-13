@@ -197,3 +197,16 @@ As capturas usam leitura pública real do Supabase, sem alterar inscrições. Os
 Prévia interna: http://127.0.0.1:8000/ (HTTP 200). O relay de prévia deste ambiente está indisponível; não há link externo verificado. Main e GitHub Pages não são atualizados.
 
 Verificação desta revisão: build concluído e 30 testes Playwright aprovados (API simulada), incluindo compartilhamento sem parâmetros extras, acesso ao ingresso no celular, filtros e fluxos existentes. Capturas conferidas em 390 × 844 e desktop; testes de largura em 320, 390 e 1440 pixels.
+
+## Navegação em páginas separadas — revisão seguinte
+
+- `index.html`: início, destaques e catálogo resumido, sem formulários de autenticação ou gestão no HTML.
+- `jogos.html`: catálogo de jogos e filtros, sem banner promocional, login ou gestão.
+- `game.html?id=…`: detalhes de um jogo, inscrição e informações reais.
+- `login.html`: entrada por e-mail, reenvio de confirmação e recuperação de senha.
+- `cadastro.html`: nome de jogador, e-mail e nova senha; confirmação obrigatória mantida.
+- `connected.html`: conta, criação/gestão de eventos e inscrições; visitante recebe links de acesso.
+
+O build extrai somente os blocos da página a partir do template compartilhado. Não se trata de esconder todos os formulários com CSS no catálogo. Os links antigos #auth/#account/#forgot-password recebem navegação compatível. Login iniciado num jogo retorna a esse jogo sem inscrever automaticamente; retornos externos são recusados. O callback de e-mail continua no mesmo endereço autorizado, sem nova configuração no Supabase. Nenhuma migração é necessária para separar as páginas.
+
+O roteiro manual foi atualizado para navegar entre catálogo e conta e continua alterando apenas o evento técnico criado pela própria execução. Build e 33 testes automatizados passaram (API simulada); capturas públicas reais foram conferidas em 390 px. As pendências de autenticação real, 003, imagem de Carandiru e SMTP permanecem. Main e Pages continuam sem alteração.

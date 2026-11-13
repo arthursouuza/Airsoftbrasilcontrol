@@ -68,7 +68,7 @@ export function renderTeams(teams, session, failed = false) {
   const container = $('teams-list'); container.replaceChildren();
   if (!session) {
     const panel = node('div', undefined, 'empty-panel'); panel.append(node('p', 'Entre na sua conta para conhecer os times cadastrados.'));
-    const link = node('a', 'Entrar na minha conta '); link.append(arrow()); link.href = '#auth'; panel.append(link); container.append(panel); return;
+    const link = node('a', 'Entrar na minha conta '); link.append(arrow()); link.href = 'login.html'; panel.append(link); container.append(panel); return;
   }
   if (failed) { container.append(node('p', 'Não foi possível carregar os times. Atualize a página para tentar novamente.', 'empty-panel')); return; }
   for (const team of teams) {
@@ -81,8 +81,7 @@ export function renderTeams(teams, session, failed = false) {
 }
 export function renderGame(event, { session, joined, onRegister, onError }) {
   const view = $('game-view'); view.replaceChildren(); view.hidden = false;
-  $('catalogue-home').hidden = true;
-  const back = node('a', '← Voltar aos jogos', 'game-breadcrumb'); back.href = 'index.html#catalogue'; view.append(back);
+  const back = node('a', '← Voltar aos jogos', 'game-breadcrumb'); back.href = 'jogos.html'; view.append(back);
   if (!event) {
     view.append(node('h1', 'Jogo não encontrado'), node('p', 'Este jogo não está disponível para sua conta ou não existe.'));
     return;

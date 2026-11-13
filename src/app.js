@@ -5,16 +5,30 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 let session = null;
 let generation = 0;
-const gamePage = document.body.dataset.page === 'game';
+const page = document.body.dataset.page;
+const gamePage = page === 'game';
+const cataloguePage = ['home', 'catalogue'].includes(page);
+const authPage = ['login', 'signup'].includes(page);
+function loginUrl() {
+  const url = new URL('login.html', location.href);
+  if (gamePage) url.searchParams.set('next', 'game.html?id=' + gameId);
+  return url.pathname + url.search;
+}
+function signedInDestination() {
+  const base = new URL('./', location.href);
+  let next;
+  try { next = new URL(new URLSearchParams(location.search).get('next') || 'connected.html', base); }
+  catch { return new URL('connected.html', base).href; }
+  return next.origin === base.origin && ['connected.html','game.html','index.html','jogos.html'].some(name => next.pathname === base.pathname + name) ? next.href : new URL('connected.html', base).href;
+}
 const gameId = new URLSearchParams(window.location.search).get('id');
 const validGameId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(gameId || '');
 if (gamePage) {
-  $('catalogue-home').hidden = true;
   $('game-view').hidden = false;
   $('game-view').textContent = 'Carregando jogo…';
 }
 let filters = { title: '', location: '', date: '' };
-$('filters-panel').open = !window.matchMedia('(max-width:650px)').matches;
+if ($('filters-panel')) $('filters-panel').open = page === 'catalogue' || !window.matchMedia('(max-width:650px)').matches;
 const literalPattern = text => '%' + text.replace(/[\\%_]/g, '\\$&') + '%';
 function publicEventsQuery() {
   let query = db.from('events').select('*').eq('status', 'published').gt('starts_at', new Date().toISOString()).order('starts_at');
@@ -72,8 +86,7 @@ async function cancelRegistration(id) {
 }
 async function registerForEvent(event) {
   if (!session) {
-    document.getElementById('auth').scrollIntoView();
-    document.getElementById('auth-form').elements.email.focus();
+    window.location.assign(loginUrl());
     return;
   }
   check(await db.from('registrations').insert({ event_id: event.id, player_id: session.user.id }));
@@ -81,6 +94,7 @@ async function registerForEvent(event) {
   await load();
 }
 async function load() {
+  if (authPage) return;
   const current = ++generation;
   const user = session?.user;
   const [events, mine, registrations, teams, detail] = await Promise.all([
@@ -93,15 +107,18 @@ async function load() {
   if (current !== generation) return;
   const publicEvents = check(events), myEvents = check(mine), myRegistrations = check(registrations);
   const joined = new Set(myRegistrations.filter(r => r.status !== 'cancelled').map(r => r.event_id));
-  renderRecents(publicEvents);
-  $('show-more-games').hidden = publicEvents.length < 2;
-  renderTeams(teams.data || [], session, !!teams.error);
+  if (cataloguePage) $('show-more-games').hidden = publicEvents.length < 2;
+  if (page === 'home') {
+    renderRecents(publicEvents);
+    renderTeams(teams.data || [], session, !!teams.error);
+  }
   if (gamePage) renderGame(detail.data?.[0], {
     session, joined: joined.has(gameId), onRegister: registerForEvent,
     onError: error => notice(errorMessage(error), true)
   });
   if (gamePage && detail.error) notice('Não foi possível carregar o jogo. Confira sua conexão e atualize a página.', true);
-  $('events').replaceChildren(); $('my-events').replaceChildren(); $('my-registrations').replaceChildren();
+  if (cataloguePage) {
+  $('events').replaceChildren();
   for (const e of publicEvents) {
     const element = posterCard(e);
     if (joined.has(e.id)) element.append(paragraph('Inscrição confirmada.'));
@@ -118,6 +135,9 @@ async function load() {
   if (!publicEvents.length) $('events').append(paragraph(filtered
     ? 'Nenhum evento encontrado com esses filtros. Tente outros termos ou limpe os filtros.'
     : 'Ainda não há próximos eventos publicados.'));
+  }
+  if (page !== 'account') return;
+  $('my-events').replaceChildren(); $('my-registrations').replaceChildren();
   for (const e of myEvents) {
     const element = card(e); element.append(paragraph({ draft: 'Rascunho', published: 'Publicado', cancelled: 'Cancelado' }[e.status]));
     const presentation = metadataEditor(e, async data => {
@@ -179,30 +199,34 @@ async function load() {
 }
 async function syncSession(next) {
   session = next;
-  $('auth').hidden = !!session; $('account').hidden = !session; $('logout').hidden = !session;
+  if ($('auth')) $('auth').hidden = !!session;
+  if ($('account')) $('account').hidden = !session;
+  if ($('account-guest')) $('account-guest').hidden = !!session;
+  $('logout').hidden = !session;
+  if (session && authPage) { location.replace(signedInDestination()); return; }
   document.querySelectorAll('[data-account-link]').forEach(link => {
-    link.href = session ? '#account' : '#auth';
+    link.href = session ? 'connected.html' : loginUrl();
   });
   document.querySelectorAll('[data-account-label]').forEach(label => { label.textContent = session ? 'Minha conta' : 'Entrar'; });
   document.querySelectorAll('[data-mobile-account-label]').forEach(label => { label.textContent = session ? 'Conta' : 'Entrar'; });
-  document.querySelectorAll('[data-registration-link]').forEach(link => { link.href = session ? '#my-registrations' : '#auth'; });
-  $('profile-warning').textContent = '';
+  document.querySelectorAll('[data-registration-link]').forEach(link => { link.href = session ? 'connected.html#my-registrations' : loginUrl(); });
+  if ($('profile-warning')) $('profile-warning').textContent = '';
   if (session) {
     const user = session.user;
-    $('welcome').textContent = `Minha conta · ${user.user_metadata?.display_name || user.email}`;
+    if ($('welcome')) $('welcome').textContent = `Minha conta · ${user.user_metadata?.display_name || user.email}`;
     try {
       const rows = check(await db.from('profiles').select('id').eq('id', user.id));
       if (!rows.length) check(await db.from('profiles').insert({ id: user.id, display_name: (user.user_metadata?.display_name || user.email.split('@')[0]).slice(0, 100) }));
-    } catch (error) { $('profile-warning').textContent = `Não foi possível salvar seu perfil: ${errorMessage(error)}`; }
+    } catch (error) { if ($('profile-warning')) $('profile-warning').textContent = `Não foi possível salvar seu perfil: ${errorMessage(error)}`; }
   }
   await load();
 }
-$('auth-form').addEventListener('submit', event => {
+$('auth-form')?.addEventListener('submit', event => {
   event.preventDefault(); const form = event.currentTarget; const submit = event.submitter;
   action(submit, async () => {
     const values = new FormData(form), email = values.get('email').trim(), password = values.get('password');
     if (submit.value === 'signup') {
-      const name = values.get('name').trim();
+      const name = (values.get('name') || '').trim();
       if (!name) throw new Error('Informe seu nome de jogador para criar a conta.');
       const data = check(await db.auth.signUp({ email, password, options: { data: { display_name: name }, emailRedirectTo: emailRedirectUrl() } }));
       notice(data.session ? 'Conta criada.' : 'Confira seu e-mail para confirmar o cadastro. Depois, entre com sua senha.');
@@ -212,7 +236,7 @@ $('auth-form').addEventListener('submit', event => {
     form.elements.password.value = '';
   });
 });
-$('event-form').addEventListener('submit', event => {
+$('event-form')?.addEventListener('submit', event => {
   event.preventDefault(); const form = event.currentTarget;
   action(event.submitter, async () => {
     if (!session) throw new Error('Entre na sua conta para criar um evento.');
@@ -231,26 +255,26 @@ $('event-form').addEventListener('submit', event => {
 $('logout').addEventListener('click', () => action($('logout'), async () => {
   check(await db.auth.signOut()); notice('Você saiu da conta.');
 }));
-$('resend-confirmation').addEventListener('click', () => action($('resend-confirmation'), async () => {
+$('resend-confirmation')?.addEventListener('click', () => action($('resend-confirmation'), async () => {
   const email = $('auth-form').elements.email;
   if (!email.reportValidity()) return;
   check(await db.auth.resend({ type: 'signup', email: email.value.trim(), options: { emailRedirectTo: emailRedirectUrl() } }));
   notice('Se houver um cadastro pendente para este e-mail, você receberá um novo link de confirmação.');
 }));
-$('reload').addEventListener('click', () => action($('reload'), load));
+$('reload')?.addEventListener('click', () => action($('reload'), load));
 function openSearch(field = 'title') {
   $('filters-panel').open = true;
   $('filters-panel').scrollIntoView({ block: 'start' });
   $('event-filters').elements[field].focus();
 }
-$('location-chip').addEventListener('click', () => openSearch('location'));
+$('location-chip')?.addEventListener('click', () => openSearch('location'));
 document.querySelectorAll('[data-search-link]').forEach(link => link.addEventListener('click', event => {
-  if (gamePage) return;
+  if (!cataloguePage) return;
   event.preventDefault(); window.location.hash = 'catalogue'; openSearch();
 }));
-$('show-more-games').addEventListener('click', () => $('events').scrollBy({ left: $('events').clientWidth * .8, behavior: 'smooth' }));
-$('show-more-recent').addEventListener('click', () => $('recent-events').scrollBy({ left: $('recent-events').clientWidth * .8, behavior: 'smooth' }));
-$('event-filters').addEventListener('submit', event => {
+$('show-more-games')?.addEventListener('click', () => $('events').scrollBy({ left: $('events').clientWidth * .8, behavior: 'smooth' }));
+$('show-more-recent')?.addEventListener('click', () => $('recent-events').scrollBy({ left: $('recent-events').clientWidth * .8, behavior: 'smooth' }));
+$('event-filters')?.addEventListener('submit', event => {
   event.preventDefault();
   const values = new FormData(event.currentTarget);
   action(event.submitter, async () => {
@@ -258,13 +282,13 @@ $('event-filters').addEventListener('submit', event => {
     await load();
   });
 });
-$('clear-filters').addEventListener('click', () => {
+$('clear-filters')?.addEventListener('click', () => {
   action($('clear-filters'), async () => {
     $('event-filters').reset(); filters = { title: '', location: '', date: '' };
     await load();
   });
 });
-$('recovery-form').addEventListener('submit', event => {
+$('recovery-form')?.addEventListener('submit', event => {
   event.preventDefault();
   const email = event.currentTarget.elements.email.value.trim();
   action(event.submitter, async () => {
@@ -279,17 +303,23 @@ db.auth.onAuthStateChange((_event, next) => {
   setTimeout(() => { if (version === authVersion) syncSession(next).catch(error => notice(errorMessage(error), true)); }, 0);
 });
 
-if (window.location.hash === '#forgot-password') {
+if ($('forgot-password') && window.location.hash === '#forgot-password') {
   $('forgot-password').open = true;
   $('recovery-form').elements.email.focus();
 }
 function updateMobileNav() {
   const hash = window.location.hash;
-  const active = ['#auth', '#account', '#forgot-password'].includes(hash) ? 'account'
-    : hash === '#my-registrations' ? 'registrations' : hash === '#catalogue' || gamePage ? 'search' : 'home';
+  const active = authPage || page === 'account' && hash !== '#my-registrations' ? 'account'
+    : hash === '#my-registrations' ? 'registrations' : hash === '#catalogue' || gamePage || page === 'catalogue' ? 'search' : 'home';
   document.querySelectorAll('[data-mobile]').forEach(link => {
     if (link.dataset.mobile === active) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   });
 }
 window.addEventListener('hashchange', updateMobileNav); updateMobileNav();
+
+if (!authPage && ['#auth','#forgot-password'].includes(location.hash)) location.replace(new URL('login.html' + (location.hash === '#forgot-password' ? '#forgot-password' : ''), location.href).href);
+if (page === 'home' && ['#account','#my-registrations'].includes(location.hash)) location.replace(new URL('connected.html' + location.hash, location.href).href);
+if (page === 'home' && location.hash === '#catalogue') openSearch();
+
+if (authPage) document.querySelectorAll('.auth-switch a').forEach(link => { if (['login.html','cadastro.html'].some(name => link.getAttribute('href') === name)) { const target = new URL(link.href); target.search = location.search; link.href = target.href; } });

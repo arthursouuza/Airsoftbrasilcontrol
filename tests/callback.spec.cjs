@@ -21,7 +21,7 @@ test('cadastro e reenvio enviam retorno explícito ao Supabase (API simulada)',a
   if(url.pathname.endsWith('/signup')||url.pathname.endsWith('/resend'))requests.push({path:url.pathname,redirect:url.searchParams.get('redirect_to'),body:req.postDataJSON()});
   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(url.pathname.endsWith('/events')?[]:{user:{id:'test'},session:null})});
  });
- await page.goto('/connected.html');await page.getByLabel('Nome de jogador').fill('Teste');await page.getByLabel('E-mail',{exact:true}).fill('test@example.test');await page.getByLabel('Senha',{exact:true}).fill('Temporary-test-password!');
+ await page.goto('/cadastro.html');await page.getByLabel('Nome de jogador').fill('Teste');await page.getByLabel('E-mail',{exact:true}).fill('test@example.test');await page.getByLabel('Senha',{exact:true}).fill('Temporary-test-password!');
  await page.getByRole('button',{name:'Criar conta',exact:true}).click();await expect(page.locator('#notice')).toContainText('Confira seu e-mail');
  expect(requests[0].redirect).toBe('http://127.0.0.1:8000/auth-callback.html');
  await page.getByRole('button',{name:'Reenviar confirmação'}).click();await expect(page.locator('#notice')).toContainText('cadastro pendente');
