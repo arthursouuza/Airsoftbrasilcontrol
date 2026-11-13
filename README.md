@@ -24,3 +24,9 @@ Os eventos iniciais são fictícios. Dados pertencem ao navegador/origem atual e
 3. Gateway Pix/cartão, checkout seguro, confirmação por webhook verificado e idempotente, expiração de reservas, conciliação e reembolsos. Nunca tratar preço ou confirmação local como pagamento.
 
 GitHub Pages hospeda os arquivos estáticos; esses serviços precisam de um backend externo. Os caminhos de CSS/JS são relativos para funcionar no subdiretório `/Airsoftbrasilcontrol/`.
+
+## Integração Supabase em preparação (branch separada)
+
+A página `connected.html` e as migrações em `supabase/` preparam contas reais, perfis, eventos por organizador e inscrições protegidas por RLS e transações. **Ainda não conectada ou homologada em projeto Supabase.** Não importa dados da demonstração. Pagamentos não foram implementados.
+
+Leia [o guia de conexão e homologação](docs/SUPABASE.md) para criar/conectar o projeto, configurar Auth e executar os testes. A demonstração original não foi alterada. A integração exige o build descrito no guia antes de uma publicação futura; a branch não muda o Pages atual.
