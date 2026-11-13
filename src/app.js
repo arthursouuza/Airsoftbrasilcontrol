@@ -4,6 +4,19 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
 let session = null;
 let generation = 0;
+let filters = { title: '', location: '', date: '' };
+const literalPattern = text => '%' + text.replace(/[\\%_]/g, '\\$&') + '%';
+function publicEventsQuery() {
+  let query = db.from('events').select('*').eq('status', 'published').gt('starts_at', new Date().toISOString()).order('starts_at');
+  if (filters.title) query = query.ilike('title', literalPattern(filters.title));
+  if (filters.location) query = query.ilike('location', literalPattern(filters.location));
+  if (filters.date) {
+    const start = new Date(filters.date + 'T00:00:00');
+    const end = new Date(start); end.setDate(end.getDate() + 1);
+    query = query.gte('starts_at', start.toISOString()).lt('starts_at', end.toISOString());
+  }
+  return query;
+}
 function notice(message, error = false) {
   $('notice').textContent = message;
   $('notice').classList.toggle('error', error);
@@ -41,7 +54,7 @@ async function load() {
   const current = ++generation;
   const user = session?.user;
   const [events, mine, registrations] = await Promise.all([
-    db.from('events').select('*').eq('status', 'published').gt('starts_at', new Date().toISOString()).order('starts_at'),
+    publicEventsQuery(),
     user ? db.from('events').select('*').eq('organizer_id', user.id).order('starts_at') : { data: [] },
     user ? db.from('registrations').select('id,event_id,events(title,starts_at,status)').eq('player_id', user.id) : { data: [] }
   ]);
@@ -59,7 +72,11 @@ async function load() {
     }));
     $('events').append(element);
   }
-  if (!publicEvents.length) $('events').append(paragraph('Ainda não há próximos eventos publicados.'));
+  const filtered = Object.values(filters).some(Boolean);
+  $('filter-status').textContent = filtered ? 'Filtros aplicados ao catálogo público.' : '';
+  if (!publicEvents.length) $('events').append(paragraph(filtered
+    ? 'Nenhum evento encontrado com esses filtros. Tente outros termos ou limpe os filtros.'
+    : 'Ainda não há próximos eventos publicados.'));
   for (const e of myEvents) {
     const element = card(e); element.append(paragraph({ draft: 'Rascunho', published: 'Publicado', cancelled: 'Cancelado' }[e.status]));
     if (e.status === 'draft') element.append(button('Publicar no catálogo', async () => {
@@ -133,6 +150,20 @@ $('resend-confirmation').addEventListener('click', () => action($('resend-confir
   notice('Se houver um cadastro pendente para este e-mail, você receberá um novo link de confirmação.');
 }));
 $('reload').addEventListener('click', () => action($('reload'), load));
+$('event-filters').addEventListener('submit', event => {
+  event.preventDefault();
+  const values = new FormData(event.currentTarget);
+  action(event.submitter, async () => {
+    filters = { title: values.get('title').trim(), location: values.get('location').trim(), date: values.get('date') };
+    await load();
+  });
+});
+$('clear-filters').addEventListener('click', () => {
+  action($('clear-filters'), async () => {
+    $('event-filters').reset(); filters = { title: '', location: '', date: '' };
+    await load();
+  });
+});
 $('recovery-form').addEventListener('submit', event => {
   event.preventDefault();
   const email = event.currentTarget.elements.email.value.trim();

@@ -58,3 +58,17 @@ Configuração administrativa exata: `docs/REDIRECIONAMENTO.md`.
 
 Use **Esqueci minha senha** na área conectada. Guia completo: [docs/SENHA.md](docs/SENHA.md).
 O link abre o formulário para o próprio usuário definir a nova senha.
+
+Envio/recebimento dos e-mails e recuperação real completa continuam pendentes.
+Domínio próprio, Resend e SMTP foram adiados. A confirmação de e-mail e as
+políticas de acesso permanecem obrigatórias. Veja [PENDENCIAS.md](PENDENCIAS.md).
+
+## Busca de eventos reais
+
+Em `connected.html`, use os campos Nome do evento, Local do evento e Data do
+evento e clique em Filtrar eventos. Os critérios são combinados; nome e local
+buscam trechos sem distinguir maiúsculas/minúsculas. A data considera o dia
+de início no horário local do navegador, incluindo o início do dia e excluindo
+o início do dia seguinte. Limpar filtros restaura os próximos eventos publicados.
+Atualizar mantém os filtros aplicados. Esses filtros são enviados ao Supabase
+e não alteram Meus eventos, Minhas inscrições ou as políticas de acesso.

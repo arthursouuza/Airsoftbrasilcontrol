@@ -107,3 +107,24 @@ A solicitação de e-mail real no site publicado foi bloqueada pelo Supabase:
 HTTP 429, `over_email_send_rate_limit`. Não houve alteração de senha. A entrega
 do e-mail e a alteração final real ficam pendentes até liberação do limite ou
 configuração de SMTP próprio, e preenchimento da nova senha pelo usuário.
+
+Por decisão do usuário, domínio próprio, Resend e SMTP ficam adiados. Manter
+o endereço atual do GitHub Pages, a confirmação obrigatória de e-mail e as
+proteções de acesso existentes. O envio e a recuperação real completa não estão
+homologados. Acompanhar em `PENDENCIAS.md`.
+
+## Busca e filtros no catálogo conectado
+
+A busca preexistente foi identificada na demonstração local (`app.js`); a área
+conectada não tinha filtros. Foram adicionados filtros combináveis de nome,
+local e data diretamente na consulta Supabase dos eventos publicados e futuros,
+sem mudanças em SQL, grants ou RLS. Busca parcial de nome e local usa ILIKE;
+percentual, sublinhado e barra invertida são escapados. Data usa limites locais
+convertidos para UTC, com fim exclusivo no dia seguinte.
+
+Os 16 testes Playwright passaram, incluindo combinação e limpeza dos filtros,
+nenhum resultado, preservação dos filtros ao atualizar, limites do dia no fuso
+America/Sao_Paulo e tela de 320 px sem rolagem horizontal. O teste de navegador
+com Supabase real também validou os filtros combinados e a limpeza, além de
+login, evento e inscrição. Eventos técnicos são cancelados ao término.
+Domínio próprio/SMTP e entrega/recuperação de senha real continuam adiados.
