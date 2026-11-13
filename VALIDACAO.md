@@ -128,3 +128,40 @@ America/Sao_Paulo e tela de 320 px sem rolagem horizontal. O teste de navegador
 com Supabase real também validou os filtros combinados e a limpeza, além de
 login, evento e inscrição. Eventos técnicos são cancelados ao término.
 Domínio próprio/SMTP e entrega/recuperação de senha real continuam adiados.
+
+## Capacidade e cancelamentos — migração ainda não aplicada no Supabase
+
+A consulta real confirmou ausência de `events.capacity`, contador e status de
+inscrição no banco atual. A restrição global jogador/evento já existia; será
+substituída por unicidade de inscrições ativas, preservando histórico.
+
+A migração 202611130002 foi aplicada com sucesso em PostgreSQL 17 isolado em
+Docker, usando três identidades locais de teste e políticas equivalentes ao
+schema inicial. Os testes mantêm a primeira transação aberta, confirmam que
+a segunda aguarda e verificam resultados depois do commit/rollback. Passaram
+última vaga concorrente, duplicidade concorrente, cancelamento simultâneo e
+repetido, reinscrição, restrições de identidade/contador/edição, redução de
+capacidade concorrente nas duas ordens e preservação de registros legados.
+Os 18 testes Playwright passaram, incluindo a interface nova com API simulada.
+
+Nenhuma inscrição remota foi alterada por esta revisão. O teste remoto parou
+no preflight, sem escritas, por ausência da migração. Aplicação no Supabase e
+homologação real com as duas contas confirmadas continuam pendentes. A interface
+nova não foi publicada. Orientações em docs/VAGAS.md. Domínio/SMTP permanecem
+adiados; confirmação de e-mail e políticas de acesso não foram desativadas.
+
+## Homologação remota de vagas e cancelamentos concluída
+
+Após aplicação da migração pelo administrador, o diagnóstico retornou zero
+inconsistências, zero duplicidades e três triggers habilitados. O teste real
+`npm run test:capacity:remote` passou com as duas contas confirmadas: disputa
+da última vaga, duplicidade ativa, cancelamento simultâneo/repetido, reinscrição,
+redução concorrente de capacidade, proteção do contador e restrições de acesso.
+Os eventos e inscrições criados pelo teste foram cancelados; nenhuma inscrição
+preexistente foi alterada.
+
+Os 18 testes Playwright passaram. No navegador com Supabase real, a interface
+validou criação com capacidade, ajuste da capacidade, cancelamento pelo jogador
+e organizador, liberação da vaga e reinscrição, além dos filtros, login e logout.
+A migração já está aplicada no projeto atual e não deve ser repetida.
+Domínio próprio, SMTP e recuperação real completa de senha continuam pendentes.

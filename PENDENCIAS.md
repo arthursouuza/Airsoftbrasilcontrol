@@ -24,8 +24,9 @@ dependendo de receber e confirmar o e-mail pelo serviço atual.
 1. Busca e filtros por título, local e data implementados na área conectada.
    Paginação continua como melhoria futura.
 2. Edição de eventos pelo organizador, com validações no banco e na interface.
-3. Limite de vagas com reserva atômica no banco para evitar excesso em inscrições
-   simultâneas; cancelamento de inscrição com liberação de vaga e histórico.
+3. Limite de vagas e cancelamento com liberação atômica: migração aplicada e
+   homologação com duas contas concluída. Histórico e permissões preservados.
+   Guia: `docs/VAGAS.md`.
 4. Painel do organizador com inscritos, contadores e pagamentos manuais,
    preservando o acesso exclusivo aos dados permitidos.
 5. Edição de perfil e gestão de equipes/membros, mantendo as regras existentes.

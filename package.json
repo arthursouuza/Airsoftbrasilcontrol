@@ -7,7 +7,9 @@
     "build": "esbuild src/app.js --bundle --minify --outfile=connected.js && esbuild src/auth-callback.js --bundle --minify --outfile=auth-callback.js",
     "test": "playwright test",
     "start": "python3 -m http.server 8000 --bind 0.0.0.0",
-    "test:isolation": "python3 scripts/check-isolation.py"
+    "test:isolation": "python3 scripts/check-isolation.py",
+    "test:capacity:db": "python3 tests/db/capacity.py",
+    "test:capacity:remote": "python3 scripts/check-capacity-remote.py"
   },
   "repository": {
     "type": "git",

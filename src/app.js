@@ -23,6 +23,8 @@ function notice(message, error = false) {
 }
 function check(result) { if (result.error) throw result.error; return result.data; }
 function errorMessage(error) {
+  if (error.code === 'P0001') return 'O evento está indisponível ou não há mais vagas. Atualize o catálogo.';
+  if (error.code === '23514') return 'A operação não atende às regras do evento. A capacidade não pode ser menor que o número de inscrições ativas.';
   if (error.code === 'over_email_send_rate_limit') return 'O limite de envio de e-mails do Supabase foi atingido. Aguarde a liberação do serviço e tente novamente.';
   if (error.code === '23505') return 'Você já está inscrito neste evento.';
   if (error.code === '42501') return 'Sua conta não tem permissão para esta ação. Confira se entrou corretamente.';
@@ -48,7 +50,15 @@ function card(event) {
   article.append(paragraph(event.description), paragraph(event.location),
     paragraph(new Date(event.starts_at).toLocaleString('pt-BR')),
     paragraph(new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(event.price_cents / 100)));
+  article.append(paragraph(event.capacity == null ? 'Capacidade ainda não definida.'
+    : `${Math.max(0, event.capacity - event.active_registration_count)} vaga(s) disponível(is) de ${event.capacity}.`));
   return article;
+}
+async function cancelRegistration(id) {
+  if (!window.confirm('Cancelar esta inscrição? O pagamento não será estornado automaticamente.')) return;
+  check(await db.from('registrations').update({ status: 'cancelled' }).eq('id', id).eq('status', 'active'));
+  notice('Inscrição cancelada. O banco libera a vaga somente no primeiro cancelamento.');
+  await load();
 }
 async function load() {
   const current = ++generation;
@@ -56,15 +66,16 @@ async function load() {
   const [events, mine, registrations] = await Promise.all([
     publicEventsQuery(),
     user ? db.from('events').select('*').eq('organizer_id', user.id).order('starts_at') : { data: [] },
-    user ? db.from('registrations').select('id,event_id,events(title,starts_at,status)').eq('player_id', user.id) : { data: [] }
+    user ? db.from('registrations').select('id,event_id,status,events(title,starts_at,status)').eq('player_id', user.id) : { data: [] }
   ]);
   if (current !== generation) return;
   const publicEvents = check(events), myEvents = check(mine), myRegistrations = check(registrations);
-  const joined = new Set(myRegistrations.map(r => r.event_id));
+  const joined = new Set(myRegistrations.filter(r => r.status !== 'cancelled').map(r => r.event_id));
   $('events').replaceChildren(); $('my-events').replaceChildren(); $('my-registrations').replaceChildren();
   for (const e of publicEvents) {
     const element = card(e);
     if (joined.has(e.id)) element.append(paragraph('Inscrição confirmada.'));
+    else if (e.capacity != null && e.active_registration_count >= e.capacity) element.append(paragraph('Lotado.'));
     else element.append(button(user ? 'Inscrever-me' : 'Entre para se inscrever', async () => {
       if (!session) { $('auth').scrollIntoView(); $('auth-form').elements.email.focus(); return; }
       check(await db.from('registrations').insert({ event_id: e.id, player_id: session.user.id }));
@@ -79,6 +90,36 @@ async function load() {
     : 'Ainda não há próximos eventos publicados.'));
   for (const e of myEvents) {
     const element = card(e); element.append(paragraph({ draft: 'Rascunho', published: 'Publicado', cancelled: 'Cancelado' }[e.status]));
+    element.append(paragraph(`${e.active_registration_count ?? 0} inscrição(ões) ativa(s).`));
+    const capacityForm = document.createElement('form');
+    const capacityLabel = document.createElement('label'); capacityLabel.textContent = 'Capacidade de vagas';
+    const capacityInput = document.createElement('input');
+    capacityInput.type = 'number'; capacityInput.min = String(Math.max(1, e.active_registration_count ?? 0));
+    capacityInput.max = '2147483647'; capacityInput.step = '1';
+    capacityInput.value = e.capacity ?? ''; capacityInput.placeholder = 'Vazio: sem limite definido';
+    capacityLabel.append(capacityInput); capacityForm.append(capacityLabel);
+    const capacitySubmit = document.createElement('button'); capacitySubmit.type = 'submit'; capacitySubmit.textContent = 'Atualizar capacidade';
+    capacityForm.append(capacitySubmit);
+    capacityForm.addEventListener('submit', event => {
+      event.preventDefault();
+      action(capacitySubmit, async () => {
+        check(await db.from('events').update({ capacity: capacityInput.value === '' ? null : Number(capacityInput.value) }).eq('id', e.id));
+        notice('Capacidade atualizada.'); await load();
+      });
+    });
+    element.append(capacityForm);
+    const participants = document.createElement('div');
+    element.append(button('Ver inscrições ativas', async () => {
+      const rows = check(await db.from('registrations').select('id,created_at').eq('event_id', e.id).eq('status', 'active').order('created_at'));
+      participants.replaceChildren();
+      for (const r of rows) {
+        const item = document.createElement('div');
+        item.append(paragraph(`Inscrição ${r.id.slice(0, 8)} · ${new Date(r.created_at).toLocaleString('pt-BR')}`),
+          button(`Cancelar inscrição ${r.id.slice(0, 8)}`, () => cancelRegistration(r.id)));
+        participants.append(item);
+      }
+      if (!rows.length) participants.append(paragraph('Nenhuma inscrição ativa.'));
+    }), participants);
     if (e.status === 'draft') element.append(button('Publicar no catálogo', async () => {
       check(await db.from('events').update({ status: 'published' }).eq('id', e.id));
       notice('Evento publicado no catálogo.'); await load();
@@ -91,9 +132,14 @@ async function load() {
     $('my-events').append(element);
   }
   if (!myEvents.length) $('my-events').append(paragraph('Você ainda não criou eventos.'));
-  for (const r of myRegistrations) $('my-registrations').append(paragraph(r.events
-    ? `${r.events.title} · ${new Date(r.events.starts_at).toLocaleString('pt-BR')}`
-    : 'Inscrição registrada. Este evento não está disponível no catálogo.'));
+  for (const r of myRegistrations) {
+    const element = document.createElement('article'); element.className = 'card';
+    element.append(paragraph(r.events ? `${r.events.title} · ${new Date(r.events.starts_at).toLocaleString('pt-BR')}`
+      : 'Inscrição registrada. Este evento não está disponível no catálogo.'));
+    element.append(paragraph(r.status === 'cancelled' ? 'Inscrição cancelada.' : 'Inscrição ativa.'));
+    if (r.status !== 'cancelled') element.append(button('Cancelar minha inscrição', () => cancelRegistration(r.id)));
+    $('my-registrations').append(element);
+  }
   if (!myRegistrations.length) $('my-registrations').append(paragraph('Você ainda não tem inscrições.'));
 }
 async function syncSession(next) {
@@ -136,7 +182,8 @@ $('event-form').addEventListener('submit', event => {
     if (!title || !location) throw new Error('Informe título e local do evento.');
     check(await db.from('events').insert({ organizer_id: session.user.id, title,
       location, description: values.get('description').trim(), starts_at: start.toISOString(), ends_at: end.toISOString(),
-      status: values.get('status'), price_cents: Math.round(Number(values.get('price')) * 100) }));
+      status: values.get('status'), price_cents: Math.round(Number(values.get('price')) * 100),
+      capacity: values.get('capacity') === '' ? null : Number(values.get('capacity')) }));
     form.reset(); notice('Evento salvo.'); await load();
   });
 });

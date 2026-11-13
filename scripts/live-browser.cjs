@@ -36,6 +36,7 @@ const key = config.match(/SUPABASE_KEY = '([^']+)'/)[1];
   await page.getByLabel('Título',{exact:true}).fill(title);await page.getByLabel('Local',{exact:true}).fill('Ambiente de teste — não comparecer');
   await page.getByLabel('Descrição',{exact:true}).fill('Evento de validação técnica. Será cancelado automaticamente.');
   await page.getByLabel('Início',{exact:true}).fill('2030-12-01T09:00');await page.getByLabel('Fim',{exact:true}).fill('2030-12-01T12:00');
+  await page.locator('#event-form input[name=capacity]').fill('1');
   await page.getByRole('button',{name:'Salvar evento',exact:true}).click();
   await expect(page.locator('#my-events h3').filter({hasText:title})).toBeVisible();
   const mine=await api('/rest/v1/events?select=id,status&title=eq.'+encodeURIComponent(title));assert.equal(mine.status,200);assert.equal(mine.data.length,1);eventId=mine.data[0].id;assert.equal(mine.data[0].status,'draft');
@@ -57,6 +58,25 @@ const key = config.match(/SUPABASE_KEY = '([^']+)'/)[1];
   const published=await api('/rest/v1/events?select=id&id=eq.'+eventId,{},true);assert.equal(published.data.length,1);console.log('PASS evento publicado no catálogo e visível sem login');
   await publicCard.getByRole('button',{name:'Inscrever-me'}).click();await expect(publicCard.getByText('Inscrição confirmada.')).toBeVisible();await expect(page.locator('#my-registrations')).toContainText(title);console.log('PASS inscrição real pela interface');
   const duplicate=await api('/rest/v1/registrations',{method:'POST',data:{event_id:eventId,player_id:auth.user_id}});assert.equal(duplicate.status,409);assert.equal(duplicate.data.code,'23505');console.log('PASS inscrição duplicada bloqueada');
+  const ownCard=page.locator('#my-events article').filter({hasText:title});
+  await ownCard.getByLabel('Capacidade de vagas').fill('2');
+  await ownCard.getByRole('button',{name:'Atualizar capacidade'}).click();
+  await expect(publicCard).toContainText('1 vaga(s) disponível(is) de 2');
+  await ownCard.getByLabel('Capacidade de vagas').fill('1');
+  await ownCard.getByRole('button',{name:'Atualizar capacidade'}).click();
+  await expect(publicCard).toContainText('0 vaga(s) disponível(is) de 1');
+  page.once('dialog',dialog=>dialog.accept());
+  await page.locator('#my-registrations article').filter({hasText:title}).getByRole('button',{name:'Cancelar minha inscrição'}).click();
+  await expect(publicCard).toContainText('1 vaga(s) disponível(is) de 1');
+  await publicCard.getByRole('button',{name:'Inscrever-me'}).click();
+  await expect(publicCard).toContainText('Inscrição confirmada.');
+  await ownCard.getByRole('button',{name:'Ver inscrições ativas'}).click();
+  page.once('dialog',dialog=>dialog.accept());
+  await ownCard.getByRole('button',{name:/Cancelar inscrição /}).click();
+  await expect(publicCard).toContainText('1 vaga(s) disponível(is) de 1');
+  await publicCard.getByRole('button',{name:'Inscrever-me'}).click();
+  await expect(publicCard).toContainText('Inscrição confirmada.');
+  console.log('PASS interface real: capacidade, cancelamento pelo jogador/organizador, vaga liberada e reinscrição');
   const foreign='00000000-0000-4000-8000-000000000001';
   for(const [table,body] of [
    ['profiles',{id:foreign,display_name:'TESTE NEGATIVO'}],
@@ -68,7 +88,11 @@ const key = config.match(/SUPABASE_KEY = '([^']+)'/)[1];
   await page.getByRole('button',{name:'Sair',exact:true}).click();await expect(page.locator('#auth')).toBeVisible();await expect(page.locator('#account')).toBeHidden();console.log('PASS logout real');
   assert.deepEqual(errors,[]);
  } finally {
-  if(eventId){const result=await api('/rest/v1/events?id=eq.'+eventId,{method:'PATCH',data:{status:'cancelled'}});assert.equal(result.status,200);console.log('CLEANUP evento de teste cancelado:',eventId);}
+  if(eventId){
+   const cancel=await api('/rest/v1/registrations?event_id=eq.'+eventId+'&player_id=eq.'+auth.user_id+'&status=eq.active',{method:'PATCH',data:{status:'cancelled'}});assert.equal(cancel.status,200);
+   const result=await api('/rest/v1/events?id=eq.'+eventId,{method:'PATCH',data:{status:'cancelled'}});assert.equal(result.status,200);
+   assert.equal(result.data[0].active_registration_count,0);console.log('CLEANUP evento e inscrições de teste cancelados:',eventId);
+  }
   await page.unrouteAll({behavior: 'wait'});await browser.close();
  }
 })().catch(e=>{console.error(e.name, String(e.message).split('Call log:')[0]);process.exitCode=1;});

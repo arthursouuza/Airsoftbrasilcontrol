@@ -72,3 +72,14 @@ de início no horário local do navegador, incluindo o início do dia e excluind
 o início do dia seguinte. Limpar filtros restaura os próximos eventos publicados.
 Atualizar mantém os filtros aplicados. Esses filtros são enviados ao Supabase
 e não alteram Meus eventos, Minhas inscrições ou as políticas de acesso.
+
+## Capacidade e cancelamentos
+
+A migração `supabase/migrations/202611130002_capacity_cancellations.sql` foi
+aplicada pelo administrador e homologada com as duas contas confirmadas.
+Não execute novamente no projeto atual. Guia e regras: [docs/VAGAS.md](docs/VAGAS.md).
+A interface mostra vagas disponíveis, permite ajustar a capacidade pelo dono e
+cancelar inscrições pelo jogador ou organizador. Reserva e liberação são
+atômicas no banco. Inscrições canceladas permanecem no histórico; nova inscrição
+cria outra linha. Cancelamento não faz estorno automático de pagamentos.
+Eventos legados ficam sem limite definido até o organizador configurar um valor.
