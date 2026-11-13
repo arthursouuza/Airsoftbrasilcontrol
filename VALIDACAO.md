@@ -66,10 +66,21 @@ foi concluída, mas o retorno público dos links antigos não abriu. As URLs
 administrativas devem ser salvas conforme `docs/REDIRECIONAMENTO.md`.
 Os sete testes locais de navegador passaram após adicionar o callback.
 
+Após o usuário salvar as URLs, `scripts/check-email-redirect.py` confirmou
+as duas configurações por comportamento real do Auth: o endpoint de verificação,
+consultado com token intencionalmente inválido e sem seguir redirecionamentos,
+retornou HTTP 303 para a Site URL quando nenhum destino foi enviado e para
+`auth-callback.html` quando solicitado. Nenhum link real foi consumido.
+
+`scripts/check-pages-layout.cjs` também passou: arquivos locais servidos por
+interceptação de requisições no navegador com a origem e o subdiretório do Pages,
+com autenticação real no Supabase, abriram a área conectada e processaram o
+callback removendo os tokens da URL. Esse teste não acessa o site público.
+
 ## Pendente antes da publicação
 
-O usuário deve salvar Site URL e Redirect URL no painel do Supabase. A chave
-pública não permite essa alteração. A rede do ambiente bloqueou a URL do GitHub
+Site URL e Redirect URL foram salvas e verificadas por comportamento do Auth.
+A rede do ambiente continua bloqueando a URL do GitHub
 Pages com HTTP 403; foi salvo um rascunho que adiciona `arthursouuza.github.io`
 aos destinos, preservando o Supabase. É necessário revisar, salvar e publicar
 essa configuração do ambiente para validar o site público. Isso não publica

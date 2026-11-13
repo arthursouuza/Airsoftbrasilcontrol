@@ -36,3 +36,11 @@ Antes da publicação, testar o callback no servidor local e o isolamento entre
 duas contas. Depois de publicar, validar o arquivo público e um link novo com
 redirect para a URL pública. Não afirmar que o retorno público foi homologado
 antes de o arquivo existir na hospedagem.
+
+## Verificação das configurações salvas
+
+`python3 scripts/check-email-redirect.py` confirmou os dois destinos nas respostas
+HTTP 303 do Auth. O teste usa token inválido para observar o destino de erro,
+sem enviar e-mail nem consumir confirmação real. O retorno de uma sessão real
+foi testado localmente e com arquivos locais sob origem/caminho de produção.
+A disponibilidade do arquivo no Pages continua pendente de publicação.
