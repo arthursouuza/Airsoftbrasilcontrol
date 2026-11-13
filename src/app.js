@@ -132,9 +132,22 @@ $('resend-confirmation').addEventListener('click', () => action($('resend-confir
   notice('Se houver um cadastro pendente para este e-mail, você receberá um novo link de confirmação.');
 }));
 $('reload').addEventListener('click', () => action($('reload'), load));
+$('recovery-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const email = event.currentTarget.elements.email.value.trim();
+  action(event.submitter, async () => {
+    check(await db.auth.resetPasswordForEmail(email, { redirectTo: emailRedirectUrl() }));
+    notice('Se houver uma conta para este e-mail, você receberá um link para redefinir sua senha. Confira também o spam.');
+  });
+});
 // As consultas são agendadas fora do callback do Auth para evitar bloqueio do SDK.
 let authVersion = 0;
 db.auth.onAuthStateChange((_event, next) => {
   const version = ++authVersion;
   setTimeout(() => { if (version === authVersion) syncSession(next).catch(error => notice(errorMessage(error), true)); }, 0);
 });
+
+if (window.location.hash === '#forgot-password') {
+  $('forgot-password').open = true;
+  $('recovery-form').elements.email.focus();
+}

@@ -53,3 +53,8 @@ a área autenticada, sem importar dados fictícios do localStorage. Os arquivos
 originais da demonstração e seu funcionamento estão descritos em
 `docs/DEMONSTRACAO.md`. O retorno de e-mail abre a área conectada.
 Configuração administrativa exata: `docs/REDIRECIONAMENTO.md`.
+
+## Recuperação de senha
+
+Use **Esqueci minha senha** na área conectada. Guia completo: [docs/SENHA.md](docs/SENHA.md).
+O link abre o formulário para o próprio usuário definir a nova senha.

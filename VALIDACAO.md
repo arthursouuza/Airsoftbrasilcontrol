@@ -92,3 +92,12 @@ arquivos estáticos com o commit enviado e repetição dos fluxos reais.
 
 A conta de teste usa senha temporária. Antes de uso pessoal definitivo, o usuário
 deve definir sua própria senha pelo fluxo de recuperação do Supabase.
+
+## Recuperação de senha
+
+Fluxo implementado no formulário Esqueci minha senha e no callback existente.
+O callback distingue recuperação de confirmação e somente oferece atualização
+com sessão e usuário validados no Supabase. Validação automatizada com API
+simulada inclui envio, atualização, confirmação divergente, senha rejeitada,
+sessão inválida e logout global. Validação real de sessão não altera a senha.
+A definição final real é realizada pelo usuário, nunca pelo agente.
