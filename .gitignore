@@ -3,3 +3,6 @@ test-results/
 playwright-report/
 .env
 __pycache__/
+work/
+*.dump
+*.backup

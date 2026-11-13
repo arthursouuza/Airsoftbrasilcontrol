@@ -37,7 +37,7 @@ alter table public.events add constraint events_status_check
 alter table public.events add column archived_from_status text;
 alter table public.events add constraint events_archived_from_status_check
   check (
-    (status = 'archived' and archived_from_status in ('draft', 'published', 'cancelled'))
+    (status = 'archived' and archived_from_status is not null and archived_from_status in ('draft', 'published', 'cancelled'))
     or (status <> 'archived' and archived_from_status is null)
   );
 
@@ -58,9 +58,6 @@ create policy admin_audit_read on public.admin_event_audit
 
 create policy events_admin_read on public.events
   for select to authenticated using ((select public.is_site_admin()));
-create policy events_admin_update on public.events
-  for update to authenticated using ((select public.is_site_admin()))
-  with check ((select public.is_site_admin()));
 create policy registrations_admin_read on public.registrations
   for select to authenticated using ((select public.is_site_admin()));
 create policy payments_admin_read on public.payments
@@ -74,9 +71,11 @@ create function public.guard_event_archive_state()
 returns trigger language plpgsql set search_path = '' as $$
 begin
   if current_user <> 'postgres' and (
-    new.status = 'archived'
-    or old.status = 'archived'
-    or new.archived_from_status is distinct from old.archived_from_status
+    (TG_OP = 'INSERT' and (new.status = 'archived' or new.archived_from_status is not null))
+    or (TG_OP = 'UPDATE' and (new.status is distinct from old.status
+      or new.archived_from_status is distinct from old.archived_from_status)
+      and (new.status = 'archived' or old.status = 'archived'
+        or new.archived_from_status is distinct from old.archived_from_status))
   ) then
     raise exception 'Use as funcoes administrativas para arquivar/restaurar' using errcode = '42501';
   end if;
@@ -84,7 +83,7 @@ begin
 end;
 $$;
 create trigger events_guard_archive_state
-  before update on public.events for each row
+  before insert or update on public.events for each row
   execute function public.guard_event_archive_state();
 revoke all on function public.guard_event_archive_state() from public, anon, authenticated;
 
@@ -133,42 +132,49 @@ begin
 end;
 $$;
 
--- Excluir apenas eventos sem qualquer pagamento, mesmo pendente.
--- Confirma-se o titulo exato. Inscricoes antes dos grupos, depois evento.
+-- Preserva a identidade dos eventos protegidos mesmo se o titulo mudar.
+create table public.protected_events (
+  event_id uuid primary key references public.events(id),
+  reason text not null
+);
+alter table public.protected_events enable row level security;
+revoke all on public.protected_events from public, anon, authenticated;
+insert into public.protected_events(event_id, reason)
+select id, 'Operacao Carandiru: preservacao obrigatoria'
+from public.events where title ilike '%carandiru%'
+  or id = 'b581d679-53ba-4479-8e92-9b44b7ab49b6'::uuid;
+
+-- Exclusao somente de evento arquivado sem inscricoes ou pagamentos.
+-- Nunca elimina inscricoes; FKs preservam pagamentos e protegem concorrencia.
 create function public.admin_delete_event(p_event_id uuid, p_confirm_title text)
 returns void language plpgsql security definer set search_path = '' as $$
-declare
-  v_event public.events%rowtype;
-  v_registrations integer;
-  v_groups integer;
+declare v_event public.events%rowtype; v_groups integer;
 begin
   if not public.is_site_admin() then
     raise exception 'Acesso administrativo negado' using errcode = '42501';
   end if;
   select * into v_event from public.events where id = p_event_id for update;
   if not found then raise exception 'Evento nao encontrado'; end if;
+  if v_event.title ilike '%carandiru%' or exists (
+    select 1 from public.protected_events where event_id = p_event_id
+  ) then
+    raise exception 'Operacao Carandiru protegida contra exclusao';
+  end if;
+  if v_event.status <> 'archived' then
+    raise exception 'Arquive o evento antes de solicitar exclusao definitiva';
+  end if;
   if p_confirm_title is distinct from v_event.title then
     raise exception 'Confirmacao incorreta: informe o titulo exato do evento';
   end if;
-  -- Bloqueia as inscricoes existentes contra novos pagamentos concorrentes.
-  perform 1 from public.registrations
-    where event_id = p_event_id for update;
-  if exists (
-    select 1 from public.payments p
-    join public.registrations r on r.id = p.registration_id
-    where r.event_id = p_event_id
-  ) then
-    raise exception 'Exclusao bloqueada: existem pagamentos vinculados';
+  if exists (select 1 from public.registrations where event_id = p_event_id) then
+    raise exception 'Exclusao bloqueada: existem inscricoes ou pagamentos vinculados';
   end if;
-  select count(*) into v_registrations from public.registrations where event_id = p_event_id;
   select count(*) into v_groups from public.event_combat_groups where event_id = p_event_id;
-  delete from public.registrations where event_id = p_event_id;
   delete from public.event_combat_groups where event_id = p_event_id;
   delete from public.events where id = p_event_id;
   insert into public.admin_event_audit(actor_id,event_id,event_title,action,details)
   values (auth.uid(),p_event_id,v_event.title,'delete',
-          jsonb_build_object('registrations_deleted',v_registrations,
-                             'groups_deleted',v_groups));
+    jsonb_build_object('groups_deleted',v_groups,'confirmed_title',p_confirm_title));
 end;
 $$;
 

@@ -11,7 +11,8 @@
     "test:capacity:db": "python3 tests/db/capacity.py",
     "test:capacity:remote": "python3 scripts/check-capacity-remote.py",
     "test:manual": "node scripts/manual-review.cjs",
-    "test:groups:db": "python3 tests/db/combat_groups.py"
+    "test:groups:db": "python3 tests/db/combat_groups.py",
+    "test:admin:db": "python3 tests/db/admin.py"
   },
   "repository": {
     "type": "git",

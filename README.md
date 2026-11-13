@@ -110,3 +110,13 @@ Para homologar login, evento, inscrição e cancelamento sem transmitir senha
 no chat, execute `npm run test:manual` no seu computador e entre diretamente
 no navegador. Preparação e resultados esperados em
 [docs/VALIDACAO-MANUAL.md](docs/VALIDACAO-MANUAL.md). A main continua inalterada.
+
+## Administração (005)
+
+Painel em Minha conta, autorizado no servidor para a conta cadastrada em `site_admins`.
+Arquivamento/restauração mantêm inscrições e pagamentos. Exclusão definitiva somente
+com aprovação pelo título exato, evento arquivado e nenhuma inscrição vinculada.
+Operação Carandiru protegida por ID e título. Instruções de backup, aplicação e
+publicação em [docs/APLICAR-005.md](docs/APLICAR-005.md).
+`npm run test:admin:db` valida 001–005 no container PostgreSQL 17 `abc-admin-db`,
+isolado de produção.

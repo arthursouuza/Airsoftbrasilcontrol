@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL, SUPABASE_KEY, emailRedirectUrl } from './config.js';
 import { dateTime, posterCard, renderRecents, renderTeams, renderGame, metadataEditor } from './catalogue.js';
+import { renderAdmin } from './admin.js';
 import { groupManager } from './combat-groups.js';
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = id => document.getElementById(id);
@@ -156,9 +157,12 @@ async function load() {
     : 'Ainda não há próximos eventos publicados.'));
   }
   if (page !== 'account') return;
+  await renderAdmin(db, $('admin-panel'), () => current === generation && session?.user.id === user.id, load, notice);
+  if (current !== generation) return;
   $('my-events').replaceChildren(); $('my-registrations').replaceChildren();
   for (const e of myEvents) {
-    const element = card(e); element.append(paragraph({ draft: 'Rascunho', published: 'Publicado', cancelled: 'Cancelado' }[e.status]));
+    const element = card(e); element.append(paragraph({ draft: 'Rascunho', published: 'Publicado', cancelled: 'Cancelado', archived: 'Arquivado' }[e.status]));
+    if (e.status === 'archived') { $('my-events').append(element); continue; }
     const presentation = metadataEditor(e, async data => {
       check(await db.from('events').update(data).eq('id', e.id));
       notice('Apresentação atualizada.'); await load();
@@ -225,6 +229,8 @@ async function load() {
 }
 async function syncSession(next) {
   session = next;
+  generation++;
+  if ($('admin-panel')) { $('admin-panel').hidden = true; $('admin-panel').replaceChildren(); }
   if ($('auth')) $('auth').hidden = !!session;
   if ($('account')) $('account').hidden = !session;
   if ($('account-guest')) $('account-guest').hidden = !!session;
